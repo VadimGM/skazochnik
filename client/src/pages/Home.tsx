@@ -3,6 +3,7 @@ import StoryForm from "@/components/StoryForm";
 import StoryLoading from "@/components/StoryLoading";
 import StoryViewer from "@/components/StoryViewer";
 import { Sparkles, Stars } from "lucide-react";
+import heroBg from "@/assets/images/hero-bg.png";
 
 export type StoryState = "idle" | "loading" | "complete";
 
@@ -26,11 +27,11 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden mesh-gradient-bg">
-      {/* Decorative modern background orbs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 rounded-full blur-[100px] animate-pulse pointer-events-none mix-blend-multiply" style={{ animationDuration: '8s' }} />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-secondary/40 rounded-full blur-[120px] animate-pulse pointer-events-none mix-blend-multiply" style={{ animationDuration: '10s' }} />
-      <div className="absolute top-[20%] right-[10%] w-[30%] h-[30%] bg-accent/30 rounded-full blur-[80px] animate-pulse pointer-events-none mix-blend-multiply" style={{ animationDuration: '12s' }} />
+    <div className="min-h-screen flex flex-col relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute top-0 left-0 w-full h-[600px] -z-10 opacity-30 pointer-events-none" 
+           style={{ backgroundImage: `url(${heroBg})`, backgroundSize: 'cover', backgroundPosition: 'center', maskImage: 'linear-gradient(to bottom, black, transparent)', WebkitMaskImage: 'linear-gradient(to bottom, black, transparent)' }} />
+      
       <header className="py-6 px-6 lg:px-12 flex justify-between items-center z-10">
         <div className="flex items-center gap-3 cursor-pointer group" onClick={handleReset}>
           <div className="bg-white/80 backdrop-blur-md p-2.5 rounded-2xl text-primary shadow-[0_4px_20px_-5px_rgba(160,120,220,0.3)] group-hover:scale-110 transition-transform">
@@ -41,6 +42,7 @@ export default function Home() {
           </h1>
         </div>
       </header>
+
       <main className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 pb-20 z-10">
         {storyState === "idle" && (
           <div className="w-full max-w-4xl mx-auto flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
@@ -52,7 +54,7 @@ export default function Home() {
               <h2 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-[1.1] tracking-tight">
                 Создайте <br/> <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-accent-foreground to-primary">волшебную сказку</span>
               </h2>
-              <p className="md:text-xl text-muted-foreground/90 max-w-2xl mx-auto font-light text-[18px] text-center">
+              <p className="text-lg md:text-xl text-muted-foreground/90 leading-relaxed max-w-2xl mx-auto font-light">
                 Загрузите фото, выберите атмосферу, и магия ИИ за минуту создаст уникальную историю, где ваш ребенок — главный герой сказочных приключений.
               </p>
             </div>
