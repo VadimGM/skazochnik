@@ -64,7 +64,7 @@ export async function generateIllustration(
   }
 
   log(`[NanoBanana] Стр.${pageIndex + 1}: Начинаю поллинг статуса задачи "${taskId}"...`, "nanoBanana");
-  const maxAttempts = 60;
+  const maxAttempts = 24;
   const pollInterval = 5000;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {

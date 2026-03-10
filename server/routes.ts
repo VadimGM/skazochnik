@@ -222,7 +222,7 @@ async function generateStoryAsync(storyId: string, params: {
   log(`[GenerateAsync] Название сказки: "${title}"`, "generate");
   log(`[GenerateAsync] Описание персонажа: "${characterDescription.substring(0, 200)}"`, "generate");
 
-  log(`[GenerateAsync] Этап 2/2: Генерация ${textPages.length} иллюстраций через Nano Banana (параллельно по 3)...`, "generate");
+  log(`[GenerateAsync] Этап 2/2: Генерация ${textPages.length} иллюстраций через Nano Banana (параллельно, макс 3 одновременно)...`, "generate");
   const imagesStart = Date.now();
 
   const publicBaseUrl = getPublicBaseUrl();
@@ -236,21 +236,15 @@ async function generateStoryAsync(storyId: string, params: {
   const PARALLEL_LIMIT = 3;
   let completedCount = 0;
 
-  for (let batchStart = 0; batchStart < textPages.length; batchStart += PARALLEL_LIMIT) {
-    const batchEnd = Math.min(batchStart + PARALLEL_LIMIT, textPages.length);
-    const batch = textPages.slice(batchStart, batchEnd);
-    
-    log(`[GenerateAsync] Пакет иллюстраций ${batchStart + 1}-${batchEnd} из ${textPages.length}...`, "generate");
+  const generateOne = async (i: number) => {
+    const page = textPages[i];
+    const pageStart = Date.now();
+    log(`[GenerateAsync] Иллюстрация ${i + 1}/${textPages.length} (${page.type}): начинаю генерацию...`, "generate");
 
-    const batchPromises = batch.map(async (page, batchIdx) => {
-      const i = batchStart + batchIdx;
-      const pageStart = Date.now();
-      log(`[GenerateAsync] Иллюстрация ${i + 1}/${textPages.length} (${page.type}): начинаю генерацию...`, "generate");
+    let imageUrl = "";
 
-      let imageUrl = "";
-
-      if (photoPublicUrl && page.imagePrompt) {
-        const enhancedPrompt = `Edit this photo of a real child into a fairy tale illustration. CRITICAL: Preserve the child's exact appearance from the photo — same face, same hair color and style, same body proportions, similar clothing style. The child must be clearly recognizable as the same person from the original photo.
+    if (photoPublicUrl && page.imagePrompt) {
+      const enhancedPrompt = `Edit this photo of a real child into a fairy tale illustration. CRITICAL: Preserve the child's exact appearance from the photo — same face, same hair color and style, same body proportions, similar clothing style. The child must be clearly recognizable as the same person from the original photo.
 
 Style: cozy children's book illustration, watercolor and digital art style, soft pastel colors, warm magical lighting, storybook aesthetic.
 
@@ -258,30 +252,40 @@ ${page.imagePrompt}
 
 No text or letters in the image. The child from the reference photo is the main character — keep their likeness accurate and consistent.`;
 
-        try {
-          imageUrl = await generateIllustration(enhancedPrompt, photoPublicUrl, i);
-          const pageElapsed = ((Date.now() - pageStart) / 1000).toFixed(1);
-          log(`[GenerateAsync] Иллюстрация ${i + 1}/${textPages.length}: готова за ${pageElapsed}с`, "generate");
-        } catch (err: any) {
-          const pageElapsed = ((Date.now() - pageStart) / 1000).toFixed(1);
-          log(`[GenerateAsync] ОШИБКА иллюстрации ${i + 1}/${textPages.length} после ${pageElapsed}с: ${err.message}`, "generate");
-          imageUrl = "";
-        }
+      try {
+        imageUrl = await generateIllustration(enhancedPrompt, photoPublicUrl, i);
+        const pageElapsed = ((Date.now() - pageStart) / 1000).toFixed(1);
+        log(`[GenerateAsync] Иллюстрация ${i + 1}/${textPages.length}: готова за ${pageElapsed}с`, "generate");
+      } catch (err: any) {
+        const pageElapsed = ((Date.now() - pageStart) / 1000).toFixed(1);
+        log(`[GenerateAsync] ОШИБКА иллюстрации ${i + 1}/${textPages.length} после ${pageElapsed}с: ${err.message}`, "generate");
+        imageUrl = "";
       }
+    }
 
-      pageResults[i] = {
-        type: page.type,
-        title: page.title || undefined,
-        text: page.text,
-        imageUrl,
-      };
+    pageResults[i] = {
+      type: page.type,
+      title: page.title || undefined,
+      text: page.text,
+      imageUrl,
+    };
 
-      completedCount++;
-      await storage.updateStory(storyId, { progress: `Создаём иллюстрации: ${completedCount} из ${textPages.length}` });
+    completedCount++;
+    await storage.updateStory(storyId, { progress: `Создаём иллюстрации: ${completedCount} из ${textPages.length}` });
+  };
+
+  const semaphore = async () => {
+    const queue = Array.from({ length: textPages.length }, (_, i) => i);
+    const workers = Array.from({ length: PARALLEL_LIMIT }, async () => {
+      while (queue.length > 0) {
+        const idx = queue.shift()!;
+        await generateOne(idx);
+      }
     });
+    await Promise.all(workers);
+  };
 
-    await Promise.all(batchPromises);
-  }
+  await semaphore();
 
   const pages = pageResults;
   const imagesElapsed = ((Date.now() - imagesStart) / 1000).toFixed(1);
