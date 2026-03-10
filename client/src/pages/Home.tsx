@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import StoryForm from "@/components/StoryForm";
 import StoryLoading from "@/components/StoryLoading";
 import StoryViewer from "@/components/StoryViewer";
 import { Sparkles, Stars } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import heroBg from "@/assets/images/hero-bg.png";
 
 export type StoryState = "idle" | "loading" | "complete";
@@ -10,25 +11,82 @@ export type StoryState = "idle" | "loading" | "complete";
 export default function Home() {
   const [storyState, setStoryState] = useState<StoryState>("idle");
   const [formData, setFormData] = useState<any>(null);
+  const [storyId, setStoryId] = useState<string | null>(null);
+  const [storyData, setStoryData] = useState<any>(null);
+  const { toast } = useToast();
 
-  const handleGenerate = (data: any) => {
+  const pollStory = useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`/api/stories/${id}`);
+      if (!res.ok) throw new Error("Failed to fetch story");
+      const data = await res.json();
+
+      if (data.status === "complete") {
+        setStoryData(data);
+        setStoryState("complete");
+      } else if (data.status === "error") {
+        toast({
+          title: "Ошибка",
+          description: "Не удалось создать сказку. Попробуйте ещё раз.",
+          variant: "destructive",
+        });
+        setStoryState("idle");
+      } else {
+        setTimeout(() => pollStory(id), 3000);
+      }
+    } catch {
+      setTimeout(() => pollStory(id), 5000);
+    }
+  }, [toast]);
+
+  const handleGenerate = async (data: any) => {
     setFormData(data);
     setStoryState("loading");
-    
-    // Mock the API delay
-    setTimeout(() => {
-      setStoryState("complete");
-    }, 4500);
+
+    try {
+      const formPayload = new FormData();
+      formPayload.append("childName", data.childName);
+      formPayload.append("gender", data.gender);
+      formPayload.append("age", String(data.age));
+      formPayload.append("theme", data.theme);
+      formPayload.append("companion", data.companion || "");
+      formPayload.append("lessons", JSON.stringify(data.lesson));
+      if (data.photo instanceof File) {
+        formPayload.append("photo", data.photo);
+      }
+
+      const res = await fetch("/api/stories", {
+        method: "POST",
+        body: formPayload,
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Server error");
+      }
+
+      const { id } = await res.json();
+      setStoryId(id);
+      pollStory(id);
+    } catch (error: any) {
+      toast({
+        title: "Ошибка",
+        description: error.message || "Не удалось отправить запрос",
+        variant: "destructive",
+      });
+      setStoryState("idle");
+    }
   };
 
   const handleReset = () => {
     setStoryState("idle");
     setFormData(null);
+    setStoryId(null);
+    setStoryData(null);
   };
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden">
-      {/* Decorative background elements */}
       <div className="absolute top-0 left-0 w-full h-[600px] -z-10 opacity-30 pointer-events-none" 
            style={{ backgroundImage: `url(${heroBg})`, backgroundSize: 'cover', backgroundPosition: 'center', maskImage: 'linear-gradient(to bottom, black, transparent)', WebkitMaskImage: 'linear-gradient(to bottom, black, transparent)' }} />
       
@@ -67,8 +125,8 @@ export default function Home() {
           <StoryLoading />
         )}
 
-        {storyState === "complete" && (
-          <StoryViewer onReset={handleReset} formData={formData} />
+        {storyState === "complete" && storyData && (
+          <StoryViewer onReset={handleReset} formData={formData} storyData={storyData} />
         )}
       </main>
     </div>
