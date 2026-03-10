@@ -282,11 +282,11 @@ export default function StoryForm({ onSubmit }: StoryFormProps) {
           </div>
         </div>
 
-        {/* Row 3: Optional details */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-white/30 rounded-[2rem] p-6 border border-white/50">
+        {/* Row 3: Lessons */}
+        <div className="bg-white/30 rounded-[2rem] p-6 border border-white/50">
           <div className="space-y-4">
             <Label className="text-lg font-serif">Мораль сказки</Label>
-            <div className="flex flex-row flex-nowrap gap-2 overflow-x-auto">
+            <div className="flex flex-row gap-2 justify-between">
               {LESSONS.map(lesson => {
                 const isSelected = selectedLessons.includes(lesson.id);
                 return (
@@ -294,7 +294,7 @@ export default function StoryForm({ onSubmit }: StoryFormProps) {
                     key={lesson.id}
                     onClick={() => toggleLesson(lesson.id)}
                     className={cn(
-                      "px-4 py-2.5 rounded-full text-sm font-semibold cursor-pointer transition-all border flex items-center gap-1.5",
+                      "flex-1 px-3 py-2.5 rounded-full text-sm font-semibold cursor-pointer transition-all border flex items-center justify-center gap-1.5 whitespace-nowrap",
                       isSelected 
                         ? "bg-primary text-white border-primary shadow-md" 
                         : "bg-white/60 border-transparent text-muted-foreground hover:bg-white hover:text-foreground hover:shadow-sm"
