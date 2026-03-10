@@ -82,31 +82,30 @@ export default function StoryViewer({ onReset, onRegenerate, formData, storyData
   if (isCover) {
     return (
       <div className="w-full max-w-6xl mx-auto flex flex-col items-center animate-in fade-in slide-in-from-bottom-12 duration-1000">
-        <div className="w-full glass-panel rounded-[2rem] overflow-hidden book-shadow relative min-h-[600px] xl:min-h-[700px]">
-          <div className="absolute inset-0">
+        <div className="w-full glass-panel rounded-[2rem] overflow-hidden book-shadow relative flex flex-col">
+          <div className="relative w-full">
             {currentContent.imageUrl ? (
               <img
                 src={currentContent.imageUrl}
                 alt="Обложка"
                 data-testid="img-cover"
-                className="w-full h-full object-cover"
+                className="w-full h-auto object-contain"
               />
             ) : (
-              <div className="w-full h-full bg-gradient-to-br from-primary/20 via-primary/5 to-accent/10" />
+              <div className="w-full aspect-[3/4] bg-gradient-to-br from-primary/20 via-primary/5 to-accent/10" />
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/10" />
-          </div>
-
-          <div className="relative z-10 flex flex-col items-center justify-center min-h-[600px] xl:min-h-[700px] p-8 md:p-16 text-center">
-            <div className="mb-6">
-              <Sparkles size={40} className="text-white/80 animate-pulse" />
+            <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 z-10 p-8 md:p-12 text-center">
+              <div className="mb-4">
+                <Sparkles size={32} className="text-white/80 animate-pulse mx-auto" />
+              </div>
+              <h2 data-testid="text-story-title" className="text-3xl md:text-5xl lg:text-6xl font-black font-serif text-white leading-tight mb-3 drop-shadow-2xl">
+                {currentContent.title || storyData.title}
+              </h2>
+              <p className="text-lg md:text-xl text-white/90 font-serif italic drop-shadow-lg">
+                {formattedText}
+              </p>
             </div>
-            <h2 data-testid="text-story-title" className="text-4xl md:text-6xl lg:text-7xl font-black font-serif text-white leading-tight mb-6 drop-shadow-2xl">
-              {currentContent.title || storyData.title}
-            </h2>
-            <p className="text-xl md:text-2xl text-white/90 font-serif italic drop-shadow-lg">
-              {formattedText}
-            </p>
           </div>
 
           {pages.length > 1 && (
