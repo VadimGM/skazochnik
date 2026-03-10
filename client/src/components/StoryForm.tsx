@@ -277,7 +277,7 @@ export default function StoryForm({ onSubmit }: StoryFormProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-white/30 rounded-[2rem] p-6 border border-white/50">
           <div className="space-y-4">
             <Label className="text-lg font-serif">Мораль сказки</Label>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-row flex-nowrap gap-2 overflow-x-auto">
               {LESSONS.map(lesson => {
                 const isSelected = selectedLessons.includes(lesson.id);
                 return (
