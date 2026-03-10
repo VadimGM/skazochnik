@@ -297,10 +297,10 @@ export default function StoryViewer({ onReset, onRegenerate, formData, storyData
           <div
             onClick={prevPage}
             data-testid="nav-prev-desktop"
-            className="absolute left-0 top-0 w-1/6 h-full z-20 cursor-pointer hidden lg:flex items-center justify-start px-6 opacity-0 hover:opacity-100 transition-all duration-300"
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-20 cursor-pointer hidden lg:flex opacity-0 hover:opacity-100 transition-all duration-300"
           >
-            <div className="bg-white/80 backdrop-blur-md p-4 rounded-full text-primary shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:scale-110 transition-transform">
-              <ChevronLeft size={36} />
+            <div className="bg-white/80 backdrop-blur-md p-3 rounded-full text-primary shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:scale-110 transition-transform">
+              <ChevronLeft size={28} />
             </div>
           </div>
         )}
@@ -309,10 +309,10 @@ export default function StoryViewer({ onReset, onRegenerate, formData, storyData
           <div
             onClick={nextPage}
             data-testid="nav-next-desktop"
-            className="absolute right-0 top-0 w-1/6 h-full z-20 cursor-pointer hidden lg:flex items-center justify-end px-6 opacity-0 hover:opacity-100 transition-all duration-300"
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-20 cursor-pointer hidden lg:flex opacity-0 hover:opacity-100 transition-all duration-300"
           >
-            <div className="bg-white/80 backdrop-blur-md p-4 rounded-full text-primary shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:scale-110 transition-transform">
-              <ChevronRight size={36} />
+            <div className="bg-white/80 backdrop-blur-md p-3 rounded-full text-primary shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:scale-110 transition-transform">
+              <ChevronRight size={28} />
             </div>
           </div>
         )}
