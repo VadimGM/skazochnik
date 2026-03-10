@@ -54,6 +54,27 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/proxy-image", async (req, res) => {
+    const imageUrl = req.query.url as string;
+    if (!imageUrl) {
+      return res.status(400).json({ message: "Missing url parameter" });
+    }
+    try {
+      const response = await fetch(imageUrl);
+      if (!response.ok) {
+        return res.status(response.status).json({ message: "Failed to fetch image" });
+      }
+      const contentType = response.headers.get("content-type") || "image/png";
+      res.setHeader("Content-Type", contentType);
+      res.setHeader("Cache-Control", "public, max-age=3600");
+      const buffer = Buffer.from(await response.arrayBuffer());
+      res.send(buffer);
+    } catch (err: any) {
+      log(`[ProxyImage] Ошибка загрузки: ${err.message}`, "routes");
+      res.status(500).json({ message: "Proxy error" });
+    }
+  });
+
   app.post("/api/stories", upload.single("photo"), async (req, res) => {
     const requestStart = Date.now();
     log(`[POST /api/stories] Новый запрос на создание сказки`, "routes");

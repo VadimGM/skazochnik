@@ -1,9 +1,10 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { ChevronLeft, ChevronRight, Share2, Download, RotateCcw, ImageIcon, BookOpen, Sparkles, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
+import robotoFontUrl from "@/assets/fonts/Roboto-Regular.ttf";
 
 interface StoryPage {
   type: "cover" | "content" | "end";
@@ -25,8 +26,11 @@ interface StoryViewerProps {
 }
 
 async function loadImageAsDataUrl(url: string): Promise<string | null> {
+  if (!url) return null;
   try {
-    const res = await fetch(url);
+    const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(url)}`;
+    const res = await fetch(proxyUrl);
+    if (!res.ok) return null;
     const blob = await res.blob();
     return new Promise((resolve) => {
       const reader = new FileReader();
@@ -37,6 +41,17 @@ async function loadImageAsDataUrl(url: string): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+async function loadFontAsBase64(url: string): Promise<string> {
+  const res = await fetch(url);
+  const buf = await res.arrayBuffer();
+  const bytes = new Uint8Array(buf);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
 }
 
 function wrapText(doc: jsPDF, text: string, maxWidth: number, fontSize: number): string[] {
@@ -127,11 +142,17 @@ export default function StoryViewer({ onReset, onRegenerate, formData, storyData
       const margin = 15;
       const contentW = pageW - margin * 2;
 
+      const fontBase64 = await loadFontAsBase64(robotoFontUrl);
+      doc.addFileToVFS("Roboto-Regular.ttf", fontBase64);
+      doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
+      doc.setFont("Roboto", "normal");
+
       for (let i = 0; i < pages.length; i++) {
         const page = pages[i];
         const text = page.text.replace(/\{name\}/g, childName);
 
         if (i > 0) doc.addPage();
+        doc.setFont("Roboto", "normal");
 
         let imgDataUrl: string | null = null;
         if (page.imageUrl) {
@@ -147,14 +168,19 @@ export default function StoryViewer({ onReset, onRegenerate, formData, storyData
           doc.setTextColor(90, 50, 140);
           const title = page.title || storyData.title || "";
           const titleLines = wrapText(doc, title, contentW, 28);
-          let titleY = page.imageUrl ? pageH - 50 : pageH / 2 - 20;
+          let titleY = imgDataUrl ? pageH - 50 : pageH / 2 - 20;
           for (const line of titleLines) {
             doc.text(line, pageW / 2, titleY, { align: "center" });
             titleY += 12;
           }
           doc.setFontSize(14);
           doc.setTextColor(130, 100, 160);
-          doc.text(text, pageW / 2, titleY + 5, { align: "center" });
+          const subtitleLines = wrapText(doc, text, contentW, 14);
+          let subY = titleY + 5;
+          for (const line of subtitleLines) {
+            doc.text(line, pageW / 2, subY, { align: "center" });
+            subY += 7;
+          }
         } else if (page.type === "end") {
           if (imgDataUrl) {
             doc.addImage(imgDataUrl, "PNG", 0, 0, pageW, pageH * 0.6, undefined, "FAST");
