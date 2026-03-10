@@ -2,8 +2,8 @@ import PDFDocument from "pdfkit";
 import path from "path";
 import { log } from "./index";
 
-const FONT_REGULAR = path.join(process.cwd(), "server/fonts/PTSerif-Regular.ttf");
-const FONT_BOLD = path.join(process.cwd(), "server/fonts/PTSerif-Bold.ttf");
+const FONT_REGULAR = path.join(process.cwd(), "server/fonts/DejaVuSerif.ttf");
+const FONT_BOLD = path.join(process.cwd(), "server/fonts/DejaVuSerif-Bold.ttf");
 
 const PAGE_W = 595.28;
 const PAGE_H = 841.89;
@@ -62,11 +62,11 @@ export async function generateStoryPDF(
         }
 
         if (page.type === "cover") {
-          await renderCover(doc, page, text, title, imgBuffer);
+          renderCover(doc, page, text, title, imgBuffer);
         } else if (page.type === "end") {
-          await renderEnd(doc, text, imgBuffer);
+          renderEnd(doc, text, imgBuffer);
         } else {
-          await renderContent(doc, text, imgBuffer);
+          renderContent(doc, text, imgBuffer);
         }
       }
 
@@ -91,13 +91,7 @@ function renderCover(
   }
 
   doc.save();
-  const gradientTop = PAGE_H * 0.55;
-  doc.rect(0, gradientTop, PAGE_W, PAGE_H - gradientTop);
-  doc.linearGradient(0, gradientTop, 0, PAGE_H)
-    .stop(0, "white", 0)
-    .stop(0.4, "white", 0.7)
-    .stop(1, "white", 1)
-    .fill();
+  doc.rect(0, PAGE_H * 0.65, PAGE_W, PAGE_H * 0.35).fill("#ffffff");
   doc.restore();
 
   const displayTitle = page.title || title || "";
@@ -128,18 +122,13 @@ function renderEnd(
   }
 
   doc.save();
-  const gradientTop = PAGE_H * 0.4;
-  doc.rect(0, gradientTop, PAGE_W, PAGE_H - gradientTop);
-  doc.linearGradient(0, gradientTop, 0, PAGE_H * 0.6)
-    .stop(0, "white", 0)
-    .stop(1, "white", 0.9)
-    .fill();
+  doc.rect(0, PAGE_H * 0.50, PAGE_W, PAGE_H * 0.50).fill("#ffffff");
   doc.restore();
 
-  const endY = imgBuffer ? PAGE_H * 0.58 : PAGE_H * 0.35;
+  const endY = imgBuffer ? PAGE_H * 0.55 : PAGE_H * 0.35;
 
   doc.font("SerifBold").fontSize(42).fillColor("#5a328c");
-  doc.text("Конец", MARGIN, endY, {
+  doc.text("\u041A\u043E\u043D\u0435\u0446", MARGIN, endY, {
     width: CONTENT_W,
     align: "center",
   });
@@ -167,13 +156,15 @@ function renderContent(
     try {
       doc.image(imgBuffer, 0, 0, { width: PAGE_W, height: imgH });
     } catch {}
-    textStartY = imgH + 20;
+    textStartY = imgH + 15;
   }
 
-  doc.rect(0, textStartY - 10, PAGE_W, PAGE_H - textStartY + 10).fill("#ffffff");
+  doc.save();
+  doc.rect(0, textStartY - 5, PAGE_W, PAGE_H - textStartY + 5).fill("#ffffff");
+  doc.restore();
 
   doc.font("Serif").fontSize(14).fillColor("#333333");
-  doc.text(text, MARGIN + 10, textStartY + 5, {
+  doc.text(text, MARGIN + 10, textStartY + 10, {
     width: CONTENT_W - 20,
     align: "left",
     lineGap: 8,
