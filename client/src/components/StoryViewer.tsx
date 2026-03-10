@@ -182,10 +182,7 @@ export default function StoryViewer({ onReset, onRegenerate, formData, storyData
             subY += 7;
           }
         } else if (page.type === "end") {
-          if (imgDataUrl) {
-            doc.addImage(imgDataUrl, "PNG", 0, 0, pageW, pageH * 0.6, undefined, "FAST");
-          }
-          const endY = imgDataUrl ? pageH * 0.65 : pageH / 2 - 20;
+          const endY = pageH / 2 - 20;
           doc.setFontSize(36);
           doc.setTextColor(90, 50, 140);
           doc.text("Конец", pageW / 2, endY, { align: "center" });
@@ -318,24 +315,40 @@ export default function StoryViewer({ onReset, onRegenerate, formData, storyData
         )}
 
         {isEnd ? (
-          <div className="w-full flex flex-col items-center justify-center p-12 md:p-20 min-h-[600px] relative">
-            {currentContent.imageUrl && (
-              <>
-                <img
-                  src={currentContent.imageUrl}
-                  alt="Финал"
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-white/90 via-white/50 to-white/30" />
-              </>
-            )}
+          <div className="w-full flex flex-col items-center justify-center p-12 md:p-20 min-h-[600px] relative bg-gradient-to-br from-white via-primary/5 to-white">
+            <div className="absolute inset-0 flex items-center justify-center opacity-[0.06] pointer-events-none">
+              <svg viewBox="0 0 400 400" className="w-[80%] h-[80%] text-primary">
+                <defs>
+                  <pattern id="vignette-pattern" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+                    <circle cx="20" cy="20" r="1.5" fill="currentColor" />
+                    <path d="M0 20 Q10 10 20 0 Q30 10 40 20 Q30 30 20 40 Q10 30 0 20Z" fill="none" stroke="currentColor" strokeWidth="0.5" />
+                  </pattern>
+                </defs>
+                <rect width="400" height="400" fill="url(#vignette-pattern)" />
+              </svg>
+            </div>
+
             <div className="relative z-10 text-center max-w-2xl">
+              <div className="mb-6 flex justify-center">
+                <svg viewBox="0 0 120 20" className="w-32 text-primary/30">
+                  <path d="M0 10 Q15 0 30 10 Q45 20 60 10 Q75 0 90 10 Q105 20 120 10" fill="none" stroke="currentColor" strokeWidth="1.5" />
+                </svg>
+              </div>
+
+              <Sparkles className="mx-auto mb-4 text-primary/40" size={32} />
+
               <h2 className="text-5xl md:text-7xl font-black font-serif text-foreground mb-8" data-testid="text-end">
                 Конец
               </h2>
               <p className="text-xl md:text-2xl font-serif text-foreground/70 italic leading-relaxed">
                 {formattedText.replace(/^Конец\.?\s*/, "")}
               </p>
+
+              <div className="mt-6 flex justify-center">
+                <svg viewBox="0 0 120 20" className="w-32 text-primary/30">
+                  <path d="M0 10 Q15 0 30 10 Q45 20 60 10 Q75 0 90 10 Q105 20 120 10" fill="none" stroke="currentColor" strokeWidth="1.5" />
+                </svg>
+              </div>
 
               <div className="mt-16 flex flex-wrap items-center justify-center gap-4">
                 <Button data-testid="button-download-pdf" onClick={handleDownloadPDF} disabled={pdfLoading} className="rounded-2xl h-14 px-6 bg-white border-2 border-white shadow-sm hover:border-primary/30 hover:bg-white/80 text-foreground font-semibold text-base transition-all">

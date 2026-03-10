@@ -260,6 +260,20 @@ async function generateStoryAsync(storyId: string, params: {
   const generateOne = async (i: number) => {
     const page = textPages[i];
     const pageStart = Date.now();
+
+    if (page.type === "end") {
+      log(`[GenerateAsync] Страница ${i + 1}/${textPages.length} (end): пропускаю генерацию иллюстрации`, "generate");
+      pageResults[i] = {
+        type: page.type,
+        title: page.title || undefined,
+        text: page.text,
+        imageUrl: "",
+      };
+      completedCount++;
+      await storage.updateStory(storyId, { progress: `Создаём иллюстрации: ${completedCount} из ${textPages.length}` });
+      return;
+    }
+
     log(`[GenerateAsync] Иллюстрация ${i + 1}/${textPages.length} (${page.type}): начинаю генерацию...`, "generate");
 
     let imageUrl = "";
