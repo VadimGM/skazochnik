@@ -87,35 +87,37 @@ ${companionNote}
 
 Ответь СТРОГО в формате JSON объекта:
 {
-  "characterDescription": "Consistent English description of the main character for all illustrations. Include: '${genderEng}, approximately ${req.age} years old'. Describe general appearance traits that stay the same across all images.",
+  "characterDescription": "${genderEng}, approximately ${req.age} years old",
   "pages": [
     {
       "type": "cover",
       "title": "Название сказки",
       "text": "Сказка для ${req.childName}",
-      "imagePrompt": "A magical fairy tale book cover illustration. A ${genderEng}, approximately ${req.age} years old, standing in [setting]. Style: cozy children's book illustration, watercolor style, soft pastel colors, warm lighting. The child is the central figure. No text or letters in the image."
+      "imagePrompt": "Scene description for the cover: the child stands in [describe setting from the story theme]. Full body view, the child is the central figure, facing the viewer. Background: [detailed magical setting]. No other human characters."
     },
     {
       "type": "content",
       "text": "Текст эпизода",
-      "imagePrompt": "Detailed English prompt describing the most vivid/brightest moment of this page. A ${genderEng}, approximately ${req.age} years old, [action in scene]. Style: cozy children's book illustration, watercolor style, soft pastel colors, warm lighting. No text or letters in the image."
+      "imagePrompt": "Scene description: the child [specific action/pose from this episode]. Setting: [detailed environment]. Emotion: [what the child feels]. Camera angle: [close-up / medium shot / full body]. No other human characters unless essential to the plot."
     },
     ...ещё ${contentPages - 1} content страниц...
     {
       "type": "end",
       "text": "Конец. [Тёплое послесловие, одно предложение]",
-      "imagePrompt": "A heartwarming closing illustration. A ${genderEng}, approximately ${req.age} years old, [peaceful happy scene]. Style: cozy children's book illustration, watercolor style, soft pastel colors, warm golden lighting. No text or letters in the image."
+      "imagePrompt": "Closing scene: the child [peaceful happy pose/action]. Setting: [warm, cozy environment]. The child looks content and happy. Full body view. Warm golden lighting."
     }
   ]
 }
 
 ПРАВИЛА ДЛЯ imagePrompt:
 - На АНГЛИЙСКОМ языке
-- Описывай самый яркий момент страницы
-- Единый стиль для всех: "cozy children's book illustration, watercolor style, soft pastel colors, warm lighting"
-- Всегда включай описание главного героя: "A ${genderEng}, approximately ${req.age} years old"
-- Обязательно добавляй "No text or letters in the image."
-- Описывай конкретную сцену, позу, окружение`;
+- НЕ описывай внешность ребёнка (цвет волос, глаз, одежду) — внешность берётся из загруженной фотографии автоматически
+- Описывай ТОЛЬКО сцену: что делает ребёнок, где находится, какие эмоции, окружающие предметы/существа
+- Указывай ракурс камеры: "full body view", "medium shot from waist up", "close-up portrait"
+- Описывай освещение, атмосферу, детали фона
+- НЕ добавляй стиль рисования — он задаётся отдельно
+- Обязательно: "No text or letters in the image."
+- Каждый промпт должен описывать КОНКРЕТНЫЙ момент из текста страницы`;
 
   log(`[OpenAI:Text] Отправляю запрос к GPT-4o-mini (max_tokens=4000, temperature=0.85, ${contentPages + 2} страниц)...`, "openai");
 

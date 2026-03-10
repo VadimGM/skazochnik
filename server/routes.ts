@@ -250,7 +250,13 @@ async function generateStoryAsync(storyId: string, params: {
       let imageUrl = "";
 
       if (photoPublicUrl && page.imagePrompt) {
-        const enhancedPrompt = `${page.imagePrompt}\n\nCharacter reference: ${characterDescription}\n\nIMPORTANT: Transform and redraw the uploaded photo into this magical fairy tale scene. Keep the child recognizable but in the watercolor illustration style. The child from the photo should be the main character in this scene.`;
+        const enhancedPrompt = `Edit this photo of a real child into a fairy tale illustration. CRITICAL: Preserve the child's exact appearance from the photo — same face, same hair color and style, same body proportions, similar clothing style. The child must be clearly recognizable as the same person from the original photo.
+
+Style: cozy children's book illustration, watercolor and digital art style, soft pastel colors, warm magical lighting, storybook aesthetic.
+
+${page.imagePrompt}
+
+No text or letters in the image. The child from the reference photo is the main character — keep their likeness accurate and consistent.`;
 
         try {
           imageUrl = await generateIllustration(enhancedPrompt, photoPublicUrl, i);
