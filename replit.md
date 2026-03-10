@@ -17,9 +17,7 @@ Russian-language children's fairy tale generator. Users upload a child's photo, 
 - `server/storage.ts` — DatabaseStorage class implementing IStorage interface
 - `server/openai.ts` — GPT-4o-mini text generation: story text + character description + image prompts
 - `server/nanoBanana.ts` — Nano Banana API: photo editing into illustrations via kie.ai
-- `server/pdfGenerator.ts` — Server-side PDF generation with pdfkit + PT Serif Cyrillic fonts
-- `server/fonts/` — PT Serif Regular + Bold TTF fonts for PDF rendering
-- `server/routes.ts` — API routes: POST /api/stories, GET /api/stories/:id, GET /api/stories/:id/pdf, POST /api/stories/:id/regenerate
+- `server/routes.ts` — API routes: POST /api/stories, GET /api/stories/:id, POST /api/stories/:id/regenerate
 - `client/src/pages/Home.tsx` — Main page with form → loading → viewer flow
 - `client/src/pages/StoryPage.tsx` — Shared story viewer at /story/:id
 - `client/src/components/StoryForm.tsx` — Story configuration form with photo upload
@@ -33,8 +31,7 @@ Russian-language children's fairy tale generator. Users upload a child's photo, 
 - Age 7-8: 7 content pages, 400-700 words
 - Age 9-12: 8 content pages, 600-900 words
 - Total pages = content + cover + end (max 10)
-- Action buttons on last page: Download PDF, Share, Regenerate, New Story
-- PDF generated server-side via pdfkit with Cyrillic fonts (PT Serif), endpoint GET /api/stories/:id/pdf
+- Action buttons on last page: Share, Regenerate, New Story
 
 ## Pipeline Flow
 1. User fills form → POST /api/stories (multipart/form-data with photo)

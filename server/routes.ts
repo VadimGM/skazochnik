@@ -3,7 +3,6 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { generateStoryText, type GeneratedPage } from "./openai";
 import { generateIllustration } from "./nanoBanana";
-import { generateStoryPDF } from "./pdfGenerator";
 import { log } from "./index";
 import multer from "multer";
 import path from "path";
@@ -155,39 +154,6 @@ export async function registerRoutes(
       log(`[GET /api/stories/${storyId}] ОШИБКА: ${error.message}`, "routes");
       log(`[GET /api/stories/${storyId}] Stack: ${error.stack}`, "routes");
       res.status(500).json({ message: error.message || "Internal server error" });
-    }
-  });
-
-  app.get("/api/stories/:id/pdf", async (req, res) => {
-    const storyId = req.params.id;
-    log(`[GET /api/stories/${storyId}/pdf] Запрос на генерацию PDF`, "routes");
-
-    try {
-      const story = await storage.getStory(storyId);
-      if (!story) {
-        return res.status(404).json({ message: "Story not found" });
-      }
-
-      if (story.status !== "complete" || !story.pages || (story.pages as any[]).length === 0) {
-        return res.status(400).json({ message: "Story is not ready yet" });
-      }
-
-      const pdfBuffer = await generateStoryPDF(
-        story.pages as any[],
-        story.title || "Сказка",
-        story.childName
-      );
-
-      const filename = encodeURIComponent(`${story.title || "Сказка"}.pdf`);
-      res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", `attachment; filename*=UTF-8''${filename}`);
-      res.setHeader("Content-Length", pdfBuffer.length);
-      res.send(pdfBuffer);
-
-      log(`[GET /api/stories/${storyId}/pdf] PDF отправлен: ${pdfBuffer.length} байт`, "routes");
-    } catch (error: any) {
-      log(`[GET /api/stories/${storyId}/pdf] ОШИБКА: ${error.message}`, "routes");
-      res.status(500).json({ message: "Failed to generate PDF" });
     }
   });
 

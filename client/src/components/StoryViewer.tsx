@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Share2, Download, RotateCcw, ImageIcon, Book
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import jsPDF from "jspdf";
 
 interface StoryPage {
   type: "cover" | "content" | "end";
@@ -21,6 +22,40 @@ interface StoryViewerProps {
     pages: StoryPage[];
     childName: string;
   };
+}
+
+async function loadImageAsDataUrl(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
+function wrapText(doc: jsPDF, text: string, maxWidth: number, fontSize: number): string[] {
+  doc.setFontSize(fontSize);
+  const words = text.split(" ");
+  const lines: string[] = [];
+  let current = "";
+
+  for (const word of words) {
+    const test = current ? `${current} ${word}` : word;
+    if (doc.getTextWidth(test) > maxWidth) {
+      if (current) lines.push(current);
+      current = word;
+    } else {
+      current = test;
+    }
+  }
+  if (current) lines.push(current);
+  return lines;
 }
 
 export default function StoryViewer({ onReset, onRegenerate, formData, storyData }: StoryViewerProps) {
@@ -81,32 +116,93 @@ export default function StoryViewer({ onReset, onRegenerate, formData, storyData
   };
 
   const handleDownloadPDF = useCallback(async () => {
-    if (pdfLoading) return;
+    if (pdfLoading || pages.length === 0) return;
     setPdfLoading(true);
-    toast({ title: "Создаём PDF...", description: "Подождите, файл готовится на сервере." });
+    toast({ title: "Создаём PDF...", description: "Загружаем иллюстрации, подождите немного." });
 
     try {
-      const res = await fetch(`/api/stories/${storyData.id}/pdf`);
-      if (!res.ok) throw new Error("Server PDF generation failed");
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageW = 210;
+      const pageH = 297;
+      const margin = 15;
+      const contentW = pageW - margin * 2;
 
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${storyData.title || "Сказка"}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      for (let i = 0; i < pages.length; i++) {
+        const page = pages[i];
+        const text = page.text.replace(/\{name\}/g, childName);
 
+        if (i > 0) doc.addPage();
+
+        let imgDataUrl: string | null = null;
+        if (page.imageUrl) {
+          imgDataUrl = await loadImageAsDataUrl(page.imageUrl);
+        }
+
+        if (page.type === "cover") {
+          if (imgDataUrl) {
+            const imgH = pageH - 60;
+            doc.addImage(imgDataUrl, "PNG", 0, 0, pageW, imgH, undefined, "FAST");
+          }
+          doc.setFontSize(28);
+          doc.setTextColor(90, 50, 140);
+          const title = page.title || storyData.title || "";
+          const titleLines = wrapText(doc, title, contentW, 28);
+          let titleY = page.imageUrl ? pageH - 50 : pageH / 2 - 20;
+          for (const line of titleLines) {
+            doc.text(line, pageW / 2, titleY, { align: "center" });
+            titleY += 12;
+          }
+          doc.setFontSize(14);
+          doc.setTextColor(130, 100, 160);
+          doc.text(text, pageW / 2, titleY + 5, { align: "center" });
+        } else if (page.type === "end") {
+          if (imgDataUrl) {
+            doc.addImage(imgDataUrl, "PNG", 0, 0, pageW, pageH * 0.6, undefined, "FAST");
+          }
+          const endY = imgDataUrl ? pageH * 0.65 : pageH / 2 - 20;
+          doc.setFontSize(36);
+          doc.setTextColor(90, 50, 140);
+          doc.text("Конец", pageW / 2, endY, { align: "center" });
+          const afterText = text.replace(/^Конец\.?\s*/, "");
+          if (afterText) {
+            doc.setFontSize(14);
+            doc.setTextColor(100, 100, 100);
+            const endLines = wrapText(doc, afterText, contentW, 14);
+            let lineY = endY + 15;
+            for (const line of endLines) {
+              doc.text(line, pageW / 2, lineY, { align: "center" });
+              lineY += 7;
+            }
+          }
+        } else {
+          let textStartY = margin;
+          if (imgDataUrl) {
+            const imgDisplayH = pageH * 0.5;
+            doc.addImage(imgDataUrl, "PNG", 0, 0, pageW, imgDisplayH, undefined, "FAST");
+            textStartY = imgDisplayH + 10;
+          }
+          doc.setFontSize(13);
+          doc.setTextColor(50, 50, 50);
+          const textLines = wrapText(doc, text, contentW, 13);
+          let lineY = textStartY;
+          for (const line of textLines) {
+            if (lineY > pageH - margin) break;
+            doc.text(line, margin, lineY);
+            lineY += 7;
+          }
+        }
+      }
+
+      const filename = `${storyData.title || "Сказка"}.pdf`;
+      doc.save(filename);
       toast({ title: "PDF готов!", description: "Файл скачан на ваше устройство." });
     } catch (err: any) {
-      console.error("PDF download error:", err);
+      console.error("PDF generation error:", err);
       toast({ title: "Ошибка", description: "Не удалось создать PDF", variant: "destructive" });
     } finally {
       setPdfLoading(false);
     }
-  }, [storyData, pdfLoading, toast]);
+  }, [pages, childName, storyData, pdfLoading, toast]);
 
   if (isCover) {
     return (
