@@ -245,7 +245,7 @@ export default function StoryForm({ onSubmit }: StoryFormProps) {
 
         {/* Row 2: Themes */}
         <div className="space-y-5">
-          <Label className="text-2xl font-serif text-foreground">Где происходит действие?</Label>
+          <Label className="text-2xl font-serif text-foreground relative top-[-2mm]">Где происходит действие?</Label>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
             {THEMES.map(theme => (
               <div 
