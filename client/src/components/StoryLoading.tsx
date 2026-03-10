@@ -2,7 +2,11 @@ import { useEffect, useState } from "react";
 import { Sparkles, Stars, Image as ImageIcon, BookOpen, Palette, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export default function StoryLoading() {
+interface StoryLoadingProps {
+  progress?: string;
+}
+
+export default function StoryLoading({ progress }: StoryLoadingProps) {
   const [messageIndex, setMessageIndex] = useState(0);
   const [dots, setDots] = useState("");
 
@@ -53,17 +57,9 @@ export default function StoryLoading() {
       </div>
 
       <div className="h-20 flex flex-col items-center justify-center w-full relative">
-        {messages.map((msg, i) => (
-          <h3
-            key={i}
-            className={cn(
-              "text-2xl md:text-3xl font-serif font-bold text-foreground text-center absolute transition-all duration-700",
-              i === messageIndex ? "opacity-100 transform-none" : "opacity-0 translate-y-4 pointer-events-none"
-            )}
-          >
-            {msg.text}{i === messageIndex ? dots : ""}
-          </h3>
-        ))}
+        <h3 className="text-2xl md:text-3xl font-serif font-bold text-foreground text-center" data-testid="text-loading-title">
+          Пишем волшебную сказку
+        </h3>
       </div>
 
       <div className="w-full max-w-md mt-10">
@@ -72,9 +68,15 @@ export default function StoryLoading() {
         </div>
       </div>
 
-      <p className="mt-6 text-muted-foreground text-sm text-center max-w-md leading-relaxed">
-        Генерация сказки с иллюстрациями занимает 1–3 минуты. Пожалуйста, не закрывайте страницу.
-      </p>
+      {progress ? (
+        <p className="mt-6 text-primary font-semibold text-base text-center" data-testid="text-progress">
+          {progress}{dots}
+        </p>
+      ) : (
+        <p className="mt-6 text-muted-foreground text-sm text-center max-w-md leading-relaxed">
+          Генерация сказки с иллюстрациями занимает 1–2 минуты. Пожалуйста, не закрывайте страницу.
+        </p>
+      )}
     </div>
   );
 }

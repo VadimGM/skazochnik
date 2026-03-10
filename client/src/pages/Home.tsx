@@ -13,6 +13,7 @@ export default function Home() {
   const [formData, setFormData] = useState<any>(null);
   const [storyId, setStoryId] = useState<string | null>(null);
   const [storyData, setStoryData] = useState<any>(null);
+  const [progress, setProgress] = useState<string>("");
   const { toast } = useToast();
 
   const pollStory = useCallback(async (id: string) => {
@@ -24,6 +25,7 @@ export default function Home() {
       if (data.status === "complete") {
         setStoryData(data);
         setStoryState("complete");
+        setProgress("");
       } else if (data.status === "error") {
         toast({
           title: "Ошибка",
@@ -31,7 +33,9 @@ export default function Home() {
           variant: "destructive",
         });
         setStoryState("idle");
+        setProgress("");
       } else {
+        if (data.progress) setProgress(data.progress);
         setTimeout(() => pollStory(id), 3000);
       }
     } catch {
@@ -141,7 +145,7 @@ export default function Home() {
         )}
 
         {storyState === "loading" && (
-          <StoryLoading />
+          <StoryLoading progress={progress} />
         )}
 
         {storyState === "complete" && storyData && (

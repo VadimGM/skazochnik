@@ -211,6 +211,7 @@ async function generateStoryAsync(storyId: string, params: {
   log(`[GenerateAsync] Параметры: ${JSON.stringify({ ...params, storyId })}`, "generate");
 
   log(`[GenerateAsync] Этап 1/2: Генерация текста сказки через GPT-4o-mini...`, "generate");
+  await storage.updateStory(storyId, { progress: "Пишем сказку..." });
   const textStart = Date.now();
   const { pages: textPages, characterDescription } = await generateStoryText(params);
   const textElapsed = ((Date.now() - textStart) / 1000).toFixed(1);
@@ -221,46 +222,62 @@ async function generateStoryAsync(storyId: string, params: {
   log(`[GenerateAsync] Название сказки: "${title}"`, "generate");
   log(`[GenerateAsync] Описание персонажа: "${characterDescription.substring(0, 200)}"`, "generate");
 
-  log(`[GenerateAsync] Этап 2/2: Генерация ${textPages.length} иллюстраций через Nano Banana...`, "generate");
+  log(`[GenerateAsync] Этап 2/2: Генерация ${textPages.length} иллюстраций через Nano Banana (параллельно по 3)...`, "generate");
   const imagesStart = Date.now();
 
   const publicBaseUrl = getPublicBaseUrl();
   const photoPublicUrl = params.photoUrl ? `${publicBaseUrl}${params.photoUrl}` : null;
   log(`[GenerateAsync] Публичный URL фото: ${photoPublicUrl || "нет фото"}`, "generate");
 
-  const pages = [];
-  for (let i = 0; i < textPages.length; i++) {
-    const page = textPages[i];
-    const pageStart = Date.now();
-    log(`[GenerateAsync] Иллюстрация ${i + 1}/${textPages.length} (${page.type}): начинаю генерацию...`, "generate");
+  await storage.updateStory(storyId, { progress: `Создаём иллюстрации: 0 из ${textPages.length}` });
 
-    let imageUrl = "";
+  const pageResults: Array<{ type: string; title?: string; text: string; imageUrl: string }> = new Array(textPages.length);
 
-    if (photoPublicUrl && page.imagePrompt) {
-      const enhancedPrompt = `${page.imagePrompt}\n\nCharacter reference: ${characterDescription}\n\nIMPORTANT: Transform and redraw the uploaded photo into this magical fairy tale scene. Keep the child recognizable but in the watercolor illustration style. The child from the photo should be the main character in this scene.`;
+  const PARALLEL_LIMIT = 3;
+  let completedCount = 0;
 
-      try {
-        imageUrl = await generateIllustration(enhancedPrompt, photoPublicUrl, i);
-        const pageElapsed = ((Date.now() - pageStart) / 1000).toFixed(1);
-        log(`[GenerateAsync] Иллюстрация ${i + 1}/${textPages.length}: готова за ${pageElapsed}с`, "generate");
-      } catch (err: any) {
-        const pageElapsed = ((Date.now() - pageStart) / 1000).toFixed(1);
-        log(`[GenerateAsync] ОШИБКА иллюстрации ${i + 1}/${textPages.length} после ${pageElapsed}с: ${err.message}`, "generate");
-        log(`[GenerateAsync] Продолжаю без иллюстрации для стр.${i + 1}`, "generate");
-        imageUrl = "";
+  for (let batchStart = 0; batchStart < textPages.length; batchStart += PARALLEL_LIMIT) {
+    const batchEnd = Math.min(batchStart + PARALLEL_LIMIT, textPages.length);
+    const batch = textPages.slice(batchStart, batchEnd);
+    
+    log(`[GenerateAsync] Пакет иллюстраций ${batchStart + 1}-${batchEnd} из ${textPages.length}...`, "generate");
+
+    const batchPromises = batch.map(async (page, batchIdx) => {
+      const i = batchStart + batchIdx;
+      const pageStart = Date.now();
+      log(`[GenerateAsync] Иллюстрация ${i + 1}/${textPages.length} (${page.type}): начинаю генерацию...`, "generate");
+
+      let imageUrl = "";
+
+      if (photoPublicUrl && page.imagePrompt) {
+        const enhancedPrompt = `${page.imagePrompt}\n\nCharacter reference: ${characterDescription}\n\nIMPORTANT: Transform and redraw the uploaded photo into this magical fairy tale scene. Keep the child recognizable but in the watercolor illustration style. The child from the photo should be the main character in this scene.`;
+
+        try {
+          imageUrl = await generateIllustration(enhancedPrompt, photoPublicUrl, i);
+          const pageElapsed = ((Date.now() - pageStart) / 1000).toFixed(1);
+          log(`[GenerateAsync] Иллюстрация ${i + 1}/${textPages.length}: готова за ${pageElapsed}с`, "generate");
+        } catch (err: any) {
+          const pageElapsed = ((Date.now() - pageStart) / 1000).toFixed(1);
+          log(`[GenerateAsync] ОШИБКА иллюстрации ${i + 1}/${textPages.length} после ${pageElapsed}с: ${err.message}`, "generate");
+          imageUrl = "";
+        }
       }
-    } else {
-      log(`[GenerateAsync] Стр.${i + 1}: Пропускаю генерацию иллюстрации (нет фото или промпта)`, "generate");
-    }
 
-    pages.push({
-      type: page.type,
-      title: page.title || undefined,
-      text: page.text,
-      imageUrl,
+      pageResults[i] = {
+        type: page.type,
+        title: page.title || undefined,
+        text: page.text,
+        imageUrl,
+      };
+
+      completedCount++;
+      await storage.updateStory(storyId, { progress: `Создаём иллюстрации: ${completedCount} из ${textPages.length}` });
     });
+
+    await Promise.all(batchPromises);
   }
 
+  const pages = pageResults;
   const imagesElapsed = ((Date.now() - imagesStart) / 1000).toFixed(1);
   const successImages = pages.filter(p => p.imageUrl).length;
   log(`[GenerateAsync] Этап 2/2 завершён за ${imagesElapsed}с: ${successImages}/${pages.length} иллюстраций успешно`, "generate");

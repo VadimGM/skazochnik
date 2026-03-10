@@ -15,6 +15,7 @@ export const stories = pgTable("stories", {
   title: text("title").notNull(),
   pages: jsonb("pages").notNull().$type<StoryPage[]>(),
   status: text("status").notNull().default("generating"),
+  progress: text("progress"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
