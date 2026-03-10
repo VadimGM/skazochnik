@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Textarea } from "@/components/ui/textarea";
-import { Wand2, Baby, Star, Compass, Ship, Castle, Home as HomeIcon } from "lucide-react";
+import { Wand2, Baby, Star, Compass, Ship, Castle, Home as HomeIcon, UploadCloud, X, Image as ImageIcon, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import themeForest from "@/assets/images/theme-forest.png";
@@ -24,6 +23,7 @@ const formSchema = z.object({
   customTheme: z.string().optional(),
   companion: z.string().optional(),
   lesson: z.array(z.string()).min(1, "Выберите хотя бы один урок"),
+  photo: z.any().optional(), // In a real app this would be a File or URL
 });
 
 const THEMES = [
@@ -35,12 +35,11 @@ const THEMES = [
 ];
 
 const LESSONS = [
-  { id: "kindness", label: "Доброта" },
-  { id: "courage", label: "Смелость" },
-  { id: "friendship", label: "Дружба" },
-  { id: "honesty", label: "Честность" },
-  { id: "patience", label: "Терпение" },
-  { id: "curiosity", label: "Любознательность" },
+  { id: "kindness", label: "Доброта", emoji: "❤️" },
+  { id: "courage", label: "Смелость", emoji: "🦁" },
+  { id: "friendship", label: "Дружба", emoji: "🤝" },
+  { id: "honesty", label: "Честность", emoji: "✨" },
+  { id: "curiosity", label: "Любопытство", emoji: "🔍" },
 ];
 
 interface StoryFormProps {
@@ -48,6 +47,10 @@ interface StoryFormProps {
 }
 
 export default function StoryForm({ onSubmit }: StoryFormProps) {
+  const [dragActive, setDragActive] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -72,99 +75,197 @@ export default function StoryForm({ onSubmit }: StoryFormProps) {
     } else {
       current.add(id);
     }
-    // Prevent emptying the array
     if (current.size === 0) current.add("kindness");
     form.setValue("lesson", Array.from(current));
   };
 
+  // Mock Photo Upload Handlers
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setPhotoPreview(url);
+      form.setValue("photo", file);
+    }
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      const url = URL.createObjectURL(file);
+      setPhotoPreview(url);
+      form.setValue("photo", file);
+    }
+  };
+
+  const clearPhoto = () => {
+    setPhotoPreview(null);
+    form.setValue("photo", undefined);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="w-full bg-card rounded-3xl p-8 book-shadow relative">
-      {/* Decorative corner */}
-      <div className="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-bl-[100px] rounded-tr-3xl -z-0"></div>
+    <form onSubmit={form.handleSubmit(onSubmit)} className="w-full glass-panel rounded-[2.5rem] p-6 md:p-10 relative overflow-hidden">
+      {/* Decorative gradient blur inside the card */}
+      <div className="absolute -top-32 -right-32 w-64 h-64 bg-primary/10 rounded-full blur-[60px] pointer-events-none"></div>
+      <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-secondary/30 rounded-full blur-[60px] pointer-events-none"></div>
       
-      <div className="space-y-8 relative z-10">
+      <div className="space-y-10 relative z-10">
         
-        {/* Row 1: Basic Info */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="space-y-4">
-            <Label className="text-lg font-serif">Как зовут главного героя?</Label>
-            <div className="relative">
-              <Baby className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
-              <Input 
-                {...form.register("childName")} 
-                placeholder="Имя ребенка" 
-                className="pl-10 h-12 text-lg rounded-xl border-border bg-background focus-visible:ring-primary/50"
+        {/* Row 1: Profile & Photo */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          
+          {/* Photo Upload Section */}
+          <div className="col-span-1 lg:col-span-5 space-y-4">
+            <div>
+              <Label className="text-xl font-serif text-foreground">Фотография героя</Label>
+              <p className="text-sm text-muted-foreground mt-1 mb-3">ИИ нарисует ребенка в иллюстрациях сказки</p>
+            </div>
+            
+            <div 
+              className={cn(
+                "relative aspect-square w-full max-w-[280px] mx-auto md:mx-0 rounded-[2rem] border-2 border-dashed flex flex-col items-center justify-center p-6 text-center transition-all duration-300 overflow-hidden cursor-pointer",
+                dragActive ? "border-primary bg-primary/5 scale-[1.02]" : "border-border hover:border-primary/40 hover:bg-white/40",
+                photoPreview ? "border-none p-0 shadow-xl" : "bg-white/30"
+              )}
+              onDragEnter={handleDrag}
+              onDragLeave={handleDrag}
+              onDragOver={handleDrag}
+              onDrop={handleDrop}
+              onClick={() => !photoPreview && fileInputRef.current?.click()}
+            >
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handlePhotoUpload} 
+                accept="image/*" 
+                className="hidden" 
               />
-            </div>
-            {form.formState.errors.childName && (
-              <p className="text-sm text-destructive mt-1">{form.formState.errors.childName.message}</p>
-            )}
-          </div>
 
-          <div className="space-y-4">
-            <Label className="text-lg font-serif">Пол ребенка</Label>
-            <div className="flex gap-4">
-              <div 
-                className={cn(
-                  "flex-1 h-12 rounded-xl border-2 flex items-center justify-center cursor-pointer transition-all font-medium",
-                  form.watch("gender") === "boy" ? "border-primary bg-primary/10 text-primary" : "border-border hover:border-primary/50 text-muted-foreground"
-                )}
-                onClick={() => form.setValue("gender", "boy")}
-              >
-                Мальчик
-              </div>
-              <div 
-                className={cn(
-                  "flex-1 h-12 rounded-xl border-2 flex items-center justify-center cursor-pointer transition-all font-medium",
-                  form.watch("gender") === "girl" ? "border-primary bg-primary/10 text-primary" : "border-border hover:border-primary/50 text-muted-foreground"
-                )}
-                onClick={() => form.setValue("gender", "girl")}
-              >
-                Девочка
-              </div>
+              {photoPreview ? (
+                <div className="relative w-full h-full group">
+                  <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
+                    <Button type="button" variant="destructive" size="icon" className="rounded-full" onClick={(e) => { e.stopPropagation(); clearPhoto(); }}>
+                      <X size={20} />
+                    </Button>
+                  </div>
+                  <div className="absolute top-3 right-3 bg-white text-primary px-3 py-1.5 rounded-full text-xs font-bold shadow-md flex items-center gap-1">
+                    <CheckCircle2 size={14} />
+                    Загружено
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                  <div className="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-2">
+                    <UploadCloud size={30} />
+                  </div>
+                  <span className="font-semibold text-foreground/80">Загрузите фото</span>
+                  <span className="text-xs">Перетащите или нажмите<br/>(до 5 МБ)</span>
+                </div>
+              )}
             </div>
           </div>
+
+          {/* Basic Info Section */}
+          <div className="col-span-1 lg:col-span-7 space-y-8">
+            <div className="space-y-3">
+              <Label className="text-xl font-serif text-foreground">Как зовут героя?</Label>
+              <div className="relative">
+                <Baby className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={24} />
+                <Input 
+                  {...form.register("childName")} 
+                  placeholder="Например: Алиса" 
+                  className="pl-12 h-16 text-xl rounded-2xl border-white bg-white/50 shadow-sm focus-visible:ring-primary focus-visible:bg-white transition-all placeholder:text-muted-foreground/50"
+                />
+              </div>
+              {form.formState.errors.childName && (
+                <p className="text-sm text-destructive mt-1 font-medium">{form.formState.errors.childName.message}</p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <Label className="text-lg font-serif">Пол</Label>
+                <div className="flex gap-2 bg-white/40 p-1.5 rounded-2xl border border-white">
+                  <div 
+                    className={cn(
+                      "flex-1 h-12 rounded-xl flex items-center justify-center cursor-pointer transition-all font-semibold text-sm",
+                      form.watch("gender") === "boy" ? "bg-white text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    )}
+                    onClick={() => form.setValue("gender", "boy")}
+                  >
+                    Мальчик
+                  </div>
+                  <div 
+                    className={cn(
+                      "flex-1 h-12 rounded-xl flex items-center justify-center cursor-pointer transition-all font-semibold text-sm",
+                      form.watch("gender") === "girl" ? "bg-white text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    )}
+                    onClick={() => form.setValue("gender", "girl")}
+                  >
+                    Девочка
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex justify-between items-end">
+                  <Label className="text-lg font-serif">Возраст</Label>
+                  <span className="text-xl font-bold text-primary">{age}</span>
+                </div>
+                <div className="bg-white/40 p-4 rounded-2xl border border-white h-14 flex items-center">
+                  <Slider 
+                    value={[age]} 
+                    min={2} max={12} step={1} 
+                    onValueChange={([val]) => form.setValue("age", val)}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
 
-        {/* Row 2: Age */}
-        <div className="space-y-6 bg-background/50 p-6 rounded-2xl border border-border/50">
-          <div className="flex justify-between items-center">
-            <Label className="text-lg font-serif">Возраст: <span className="text-primary font-bold text-xl">{age}</span> лет</Label>
-            <span className="text-sm text-muted-foreground italic">Определяет сложность текста</span>
-          </div>
-          <Slider 
-            value={[age]} 
-            min={2} max={12} step={1} 
-            onValueChange={([val]) => form.setValue("age", val)}
-            className="w-full"
-          />
-          <div className="flex justify-between text-xs text-muted-foreground font-medium">
-            <span>2 года</span>
-            <span>12 лет</span>
-          </div>
-        </div>
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-border to-transparent my-8"></div>
 
-        {/* Row 3: Themes */}
-        <div className="space-y-4">
-          <Label className="text-lg font-serif">Выберите атмосферу сказки</Label>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        {/* Row 2: Themes */}
+        <div className="space-y-5">
+          <Label className="text-2xl font-serif text-foreground">Где происходит действие?</Label>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
             {THEMES.map(theme => (
               <div 
                 key={theme.id}
                 onClick={() => form.setValue("theme", theme.id)}
                 className={cn(
-                  "group relative aspect-square rounded-2xl overflow-hidden cursor-pointer border-4 transition-all duration-300",
-                  selectedTheme === theme.id ? "border-primary shadow-lg shadow-primary/20 scale-[1.02]" : "border-transparent hover:border-primary/30"
+                  "group relative aspect-[4/5] rounded-[2rem] overflow-hidden cursor-pointer transition-all duration-400 border-2",
+                  selectedTheme === theme.id ? "border-primary shadow-[0_8px_30px_-5px_rgba(160,120,220,0.4)] scale-[1.03]" : "border-transparent hover:scale-[1.01] hover:shadow-lg"
                 )}
               >
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10"></div>
-                <img src={theme.image} alt={theme.label} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                <div className="absolute bottom-3 left-0 w-full text-center z-20 px-2">
-                  <p className="text-white font-medium text-sm drop-shadow-md leading-tight">{theme.label}</p>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent z-10 transition-opacity group-hover:opacity-90"></div>
+                <img src={theme.image} alt={theme.label} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
+                
+                <div className="absolute bottom-4 left-0 w-full text-center z-20 px-3">
+                  <p className="text-white font-semibold text-sm md:text-base drop-shadow-md leading-tight">{theme.label}</p>
                 </div>
+
                 {selectedTheme === theme.id && (
-                  <div className="absolute top-2 right-2 z-20 bg-primary text-white rounded-full p-1 shadow-sm">
-                    <Wand2 size={14} />
+                  <div className="absolute top-3 right-3 z-20 bg-primary text-white rounded-full p-2 shadow-lg animate-in zoom-in duration-300">
+                    <CheckCircle2 size={16} strokeWidth={3} />
                   </div>
                 )}
               </div>
@@ -172,10 +273,10 @@ export default function StoryForm({ onSubmit }: StoryFormProps) {
           </div>
         </div>
 
-        {/* Row 4: Optional details */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Row 3: Optional details */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-white/30 rounded-[2rem] p-6 border border-white/50">
           <div className="space-y-4">
-            <Label className="text-lg font-serif">Чему научит сказка?</Label>
+            <Label className="text-lg font-serif">Мораль сказки</Label>
             <div className="flex flex-wrap gap-2">
               {LESSONS.map(lesson => {
                 const isSelected = selectedLessons.includes(lesson.id);
@@ -184,12 +285,13 @@ export default function StoryForm({ onSubmit }: StoryFormProps) {
                     key={lesson.id}
                     onClick={() => toggleLesson(lesson.id)}
                     className={cn(
-                      "px-4 py-2 rounded-full text-sm font-medium cursor-pointer transition-all border",
+                      "px-4 py-2.5 rounded-full text-sm font-semibold cursor-pointer transition-all border flex items-center gap-1.5",
                       isSelected 
-                        ? "bg-secondary text-secondary-foreground border-secondary/50" 
-                        : "bg-background border-border text-muted-foreground hover:border-primary/40"
+                        ? "bg-primary text-white border-primary shadow-md" 
+                        : "bg-white/60 border-transparent text-muted-foreground hover:bg-white hover:text-foreground hover:shadow-sm"
                     )}
                   >
+                    <span>{lesson.emoji}</span>
                     {lesson.label}
                   </div>
                 )
@@ -198,24 +300,23 @@ export default function StoryForm({ onSubmit }: StoryFormProps) {
           </div>
           
           <div className="space-y-4">
-            <Label className="text-lg font-serif">Имя друга или питомца <span className="text-muted-foreground text-sm font-sans font-normal">(необязательно)</span></Label>
+            <Label className="text-lg font-serif">Друг или питомец <span className="text-muted-foreground text-sm font-sans font-normal ml-1">(опционально)</span></Label>
             <Input 
               {...form.register("companion")} 
-              placeholder="Например: пес Шарик, лисенок Рыжик..." 
-              className="h-12 rounded-xl border-border bg-background focus-visible:ring-primary/50"
+              placeholder="Например: корги Чарли..." 
+              className="h-14 px-5 rounded-2xl border-white bg-white/60 shadow-sm focus-visible:ring-primary focus-visible:bg-white"
             />
           </div>
         </div>
 
         {/* Submit */}
-        <div className="pt-6 flex justify-center">
+        <div className="pt-4 flex justify-center">
           <Button 
             type="submit" 
-            size="lg" 
-            className="h-16 px-12 text-lg rounded-full font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-transform"
+            className="clay-button h-16 md:h-20 px-10 md:px-16 text-lg md:text-xl rounded-full font-bold bg-primary hover:bg-primary/95 text-white w-full md:w-auto"
           >
-            <Wand2 className="mr-2 h-6 w-6" />
-            Создать сказку
+            <Wand2 className="mr-3 h-6 w-6" />
+            Создать волшебство
           </Button>
         </div>
 
