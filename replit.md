@@ -54,6 +54,7 @@ Russian-language children's fairy tale generator. Users upload a child's photo, 
 - KIE_API_KEY — Kie.ai API key for Nano Banana image editing
 
 ## Key Notes
+- Общение с пользователем ведётся исключительно на русском языке
 - Images in client/src/assets/ must be imported as JS variables
 - CSS color tokens use `H S% L%` format (no hsl() wrapper) for Tailwind v4
 - All UI text is in Russian
