@@ -76,10 +76,11 @@ export async function generateIllustration(
     }
 
     const createData = JSON.parse(createResText);
-    taskId = createData.taskId || createData.task_id || createData.id;
+    const inner = createData.data || createData;
+    taskId = inner.taskId || inner.task_id || inner.id || createData.taskId || createData.task_id;
 
     if (!taskId) {
-      log(`[NanoBanana] Стр.${pageIndex + 1}: ОШИБКА: taskId не найден в ответе. Ключи: [${Object.keys(createData).join(", ")}]`, "nanoBanana");
+      log(`[NanoBanana] Стр.${pageIndex + 1}: ОШИБКА: taskId не найден в ответе. Полная структура: ${JSON.stringify(createData).substring(0, 500)}`, "nanoBanana");
       throw new Error(`No taskId in createTask response: ${createResText}`);
     }
 
@@ -113,14 +114,18 @@ export async function generateIllustration(
         continue;
       }
 
-      const queryData = JSON.parse(queryResText);
-      const status = queryData.status || queryData.state || "unknown";
+      const queryRaw = JSON.parse(queryResText);
+      const queryData = queryRaw.data || queryRaw;
+      const status = queryData.status || queryData.state || queryRaw.status || "unknown";
 
-      if (attempt % 5 === 1 || status !== "processing") {
+      if (attempt % 5 === 1 || (status !== "processing" && status !== "pending" && status !== "running")) {
         log(`[NanoBanana] Стр.${pageIndex + 1}: Попытка ${attempt}/${maxAttempts}: status="${status}"`, "nanoBanana");
+        if (attempt === 1) {
+          log(`[NanoBanana] Стр.${pageIndex + 1}: Полный ответ queryTask: ${queryResText.substring(0, 800)}`, "nanoBanana");
+        }
       }
 
-      if (status === "completed" || status === "success" || status === "COMPLETED" || status === "SUCCESS") {
+      if (status === "completed" || status === "success" || status === "COMPLETED" || status === "SUCCESS" || status === "done") {
         const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
         let imageUrl = "";
@@ -140,14 +145,29 @@ export async function generateIllustration(
           if (typeof queryData.result === "string" && queryData.result.startsWith("http")) {
             imageUrl = queryData.result;
           }
+        } else if (queryData.images?.[0]?.url) {
+          imageUrl = queryData.images[0].url;
+        } else if (queryData.images?.[0]) {
+          if (typeof queryData.images[0] === "string") {
+            imageUrl = queryData.images[0];
+          }
+        }
+
+        if (!imageUrl) {
+          log(`[NanoBanana] Стр.${pageIndex + 1}: status=completed, ищу URL в полном ответе: ${queryResText.substring(0, 1500)}`, "nanoBanana");
+          const urlMatch = queryResText.match(/"(https?:\/\/[^"]+\.(png|jpg|jpeg|webp)[^"]*)"/);
+          if (urlMatch) {
+            imageUrl = urlMatch[1];
+            log(`[NanoBanana] Стр.${pageIndex + 1}: Найден URL через regex: ${imageUrl.substring(0, 100)}`, "nanoBanana");
+          }
         }
 
         if (imageUrl) {
-          log(`[NanoBanana] Стр.${pageIndex + 1}: ГОТОВО за ${elapsed}с! URL: ${imageUrl.substring(0, 100)}...`, "nanoBanana");
+          log(`[NanoBanana] Стр.${pageIndex + 1}: ГОТОВО за ${elapsed}с! URL: ${imageUrl.substring(0, 150)}`, "nanoBanana");
           return imageUrl;
         }
 
-        log(`[NanoBanana] Стр.${pageIndex + 1}: status=completed но URL не найден. Полный ответ: ${queryResText.substring(0, 1000)}`, "nanoBanana");
+        log(`[NanoBanana] Стр.${pageIndex + 1}: status=completed но URL не найден. Полный ответ: ${queryResText.substring(0, 1500)}`, "nanoBanana");
         throw new Error(`Task completed but no image URL found. Response: ${queryResText.substring(0, 500)}`);
       }
 
