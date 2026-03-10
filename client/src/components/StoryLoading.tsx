@@ -1,72 +1,49 @@
 import { useEffect, useState } from "react";
-import { Sparkles, Stars, Image as ImageIcon } from "lucide-react";
+import { Sparkles, Stars, Image as ImageIcon, BookOpen, Palette, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function StoryLoading() {
-  const [progress, setProgress] = useState(0);
   const [messageIndex, setMessageIndex] = useState(0);
-  
+  const [dots, setDots] = useState("");
+
   const messages = [
-    "Анализируем фотографию...",
-    "Рисуем главного героя...",
-    "Придумываем увлекательный сюжет...",
-    "Создаем волшебные иллюстрации...",
-    "Добавляем последние штрихи магии...",
+    { text: "Анализируем фотографию героя", icon: ImageIcon },
+    { text: "Придумываем увлекательный сюжет", icon: BookOpen },
+    { text: "Пишем волшебную сказку", icon: Wand2 },
+    { text: "Рисуем сказочные иллюстрации", icon: Palette },
+    { text: "Создаём волшебный мир", icon: Stars },
+    { text: "Добавляем последние штрихи магии", icon: Sparkles },
   ];
-
-  useEffect(() => {
-    const duration = 4500; // Mock 4.5s loading
-    const interval = 50;
-    const steps = duration / interval;
-    const increment = 100 / steps;
-
-    const timer = setInterval(() => {
-      setProgress(p => {
-        if (p >= 100) {
-          clearInterval(timer);
-          return 100;
-        }
-        return p + increment;
-      });
-    }, interval);
-
-    return () => clearInterval(timer);
-  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
       setMessageIndex(prev => (prev + 1) % messages.length);
-    }, 1000);
+    }, 4000);
     return () => clearInterval(interval);
   }, [messages.length]);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDots(prev => prev.length >= 3 ? "" : prev + ".");
+    }, 500);
+    return () => clearInterval(interval);
+  }, []);
+
+  const CurrentIcon = messages[messageIndex].icon;
+
   return (
     <div className="flex flex-col items-center justify-center min-h-[500px] w-full max-w-2xl mx-auto glass-panel rounded-[3rem] p-12">
-      
-      {/* Animated Centerpiece */}
+
       <div className="relative mb-16 mt-8 flex items-center justify-center">
-        {/* Glow rings */}
-        <div className="absolute inset-0 bg-primary/20 blur-[50px] rounded-full w-48 h-48 animate-pulse"></div>
-        <div className="absolute inset-0 bg-accent/30 blur-[40px] rounded-full w-32 h-32 animate-pulse" style={{ animationDelay: '1s' }}></div>
-        
-        {/* Core elements */}
-        <div className="relative z-10 flex items-center gap-6">
-          <div className="w-20 h-20 bg-white/80 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-xl animate-bounce" style={{ animationDuration: '2s' }}>
-            <ImageIcon className="text-primary w-10 h-10" />
-          </div>
-          
-          <div className="flex gap-2">
-            {[1,2,3].map(i => (
-              <div key={i} className="w-2 h-2 rounded-full bg-primary/50 animate-pulse" style={{ animationDelay: `${i * 200}ms` }}></div>
-            ))}
-          </div>
-          
-          <div className="w-20 h-20 bg-white/80 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-xl animate-bounce" style={{ animationDuration: '2.5s', animationDelay: '0.2s' }}>
-            <Stars className="text-accent-foreground w-10 h-10" />
+        <div className="absolute inset-0 bg-primary/20 blur-[50px] rounded-full w-48 h-48 animate-pulse" />
+        <div className="absolute inset-0 bg-accent/30 blur-[40px] rounded-full w-32 h-32 animate-pulse" style={{ animationDelay: '1s' }} />
+
+        <div className="relative z-10">
+          <div className="w-24 h-24 bg-white/80 backdrop-blur-md rounded-3xl flex items-center justify-center shadow-xl animate-bounce" style={{ animationDuration: '2s' }}>
+            <CurrentIcon className="text-primary w-12 h-12" key={messageIndex} />
           </div>
         </div>
 
-        {/* Orbiting sparkles */}
         <div className="absolute top-[-20px] left-[-20px] text-accent animate-[spin_4s_linear_infinite] origin-[80px_80px]">
           <Sparkles size={20} className="animate-pulse" />
         </div>
@@ -75,36 +52,29 @@ export default function StoryLoading() {
         </div>
       </div>
 
-      {/* Loading Text */}
       <div className="h-20 flex flex-col items-center justify-center w-full relative">
         {messages.map((msg, i) => (
-          <h3 
+          <h3
             key={i}
             className={cn(
-              "text-2xl md:text-3xl font-serif font-bold text-foreground text-center absolute transition-all duration-500",
+              "text-2xl md:text-3xl font-serif font-bold text-foreground text-center absolute transition-all duration-700",
               i === messageIndex ? "opacity-100 transform-none" : "opacity-0 translate-y-4 pointer-events-none"
             )}
           >
-            {msg}
+            {msg.text}{i === messageIndex ? dots : ""}
           </h3>
         ))}
       </div>
 
-      {/* Progress bar */}
-      <div className="w-full max-w-md h-4 bg-white/50 backdrop-blur-sm rounded-full mt-8 overflow-hidden border border-white/80 shadow-inner relative">
-        <div 
-          className="h-full bg-gradient-to-r from-primary via-accent-foreground to-primary rounded-full transition-all duration-75 ease-linear relative"
-          style={{ width: `${progress}%`, backgroundSize: '200% 100%', animation: 'gradientMove 2s linear infinite' }}
-        >
-          {/* Shimmer effect inside progress bar */}
-          <div className="absolute top-0 left-0 bottom-0 right-0 bg-gradient-to-r from-transparent via-white/40 to-transparent w-[50%] animate-[shimmer_1.5s_infinite]"></div>
+      <div className="w-full max-w-md mt-10">
+        <div className="h-2 bg-white/50 backdrop-blur-sm rounded-full overflow-hidden border border-white/80 shadow-inner">
+          <div className="h-full bg-gradient-to-r from-primary via-accent-foreground to-primary rounded-full animate-loading-bar" style={{ backgroundSize: '200% 100%' }} />
         </div>
       </div>
-      
-      <p className="mt-4 text-muted-foreground font-medium text-sm">
-        {Math.round(progress)}%
-      </p>
 
+      <p className="mt-6 text-muted-foreground text-sm text-center max-w-md leading-relaxed">
+        Генерация сказки с иллюстрациями занимает 1–3 минуты. Пожалуйста, не закрывайте страницу.
+      </p>
     </div>
   );
 }

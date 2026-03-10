@@ -1,26 +1,45 @@
 # Сказочник — AI Children's Fairy Tale Generator
 
 ## Overview
-Russian-language children's fairy tale generator. Users upload a child's photo, configure story parameters (name, gender, age, theme, morals), and receive a unique AI-generated illustrated story with the child as the main character.
+Russian-language children's fairy tale generator. Users upload a child's photo, configure story parameters (name, gender, age, theme, morals), and receive a unique AI-generated illustrated story with the child as the main character. Illustrations are created by editing the child's actual photo into fairy tale scenes.
 
 ## Tech Stack
 - **Frontend**: React + Vite + TypeScript, TailwindCSS v4, wouter routing, TanStack Query
 - **Backend**: Express.js + TypeScript
 - **Database**: PostgreSQL with Drizzle ORM (neon-serverless driver)
-- **AI**: OpenAI GPT-4o for story text, DALL-E 3 for illustrations
+- **AI Text**: OpenAI GPT-4o-mini for story text generation
+- **AI Images**: Nano Banana API (kie.ai) — google/nano-banana-edit model for photo-to-illustration editing
 - **File Uploads**: Multer (stored in /uploads directory)
 
 ## Architecture
-- `shared/schema.ts` — Drizzle schema (stories table) + Zod insert schemas
+- `shared/schema.ts` — Drizzle schema (stories table) + StoryPage interface with type field
 - `server/db.ts` — Database connection via neon-serverless
 - `server/storage.ts` — DatabaseStorage class implementing IStorage interface
-- `server/openai.ts` — OpenAI integration: generateStoryText() + generateStoryImage()
-- `server/routes.ts` — API routes: POST /api/stories, GET /api/stories/:id
+- `server/openai.ts` — GPT-4o-mini text generation: story text + character description + image prompts
+- `server/nanoBanana.ts` — Nano Banana API: photo editing into illustrations via kie.ai
+- `server/routes.ts` — API routes: POST /api/stories, GET /api/stories/:id, POST /api/stories/:id/regenerate
 - `client/src/pages/Home.tsx` — Main page with form → loading → viewer flow
 - `client/src/pages/StoryPage.tsx` — Shared story viewer at /story/:id
 - `client/src/components/StoryForm.tsx` — Story configuration form with photo upload
-- `client/src/components/StoryViewer.tsx` — Book-spread story reader
-- `client/src/components/StoryLoading.tsx` — Animated loading screen
+- `client/src/components/StoryViewer.tsx` — Book reader with cover/content/end page types
+- `client/src/components/StoryLoading.tsx` — Animated loading screen (real-time, ~1-3 min)
+
+## Story Structure
+- Page types: "cover" (title page), "content" (story pages), "end" (finale with "Конец")
+- Age 2-4: 5 content pages, simple sentences, 200-400 words
+- Age 5-6: 6 content pages, 400-600 words
+- Age 7-8: 7 content pages, 400-700 words
+- Age 9-12: 8 content pages, 600-900 words
+- Total pages = content + cover + end (max 10)
+- Action buttons on last page: Share, Regenerate, New Story
+
+## Pipeline Flow
+1. User fills form → POST /api/stories (multipart/form-data with photo)
+2. Server creates story record with status "generating", returns { id }
+3. GPT-4o-mini generates story text + characterDescription + imagePrompts for each page
+4. For each page: Nano Banana edits the uploaded photo into the scene illustration
+5. Story updated to status "complete" with pages array
+6. Frontend polls GET /api/stories/:id every 3s until complete
 
 ## Design
 - Glassmorphism style with .glass-panel class
@@ -29,20 +48,14 @@ Russian-language children's fairy tale generator. Users upload a child's photo, 
 - Watercolor hero background from client/src/assets/images/hero-bg.png
 - Theme card images imported as JS modules from client/src/assets/images/
 
-## API Flow
-1. User fills form → POST /api/stories (multipart/form-data with photo)
-2. Server creates story record with status "generating", returns { id }
-3. Background: GPT-4o generates 5 story pages with image prompts
-4. Background: DALL-E 3 generates illustration for each page
-5. Story updated to status "complete" with pages array
-6. Frontend polls GET /api/stories/:id until complete
-
 ## Environment Variables
 - DATABASE_URL — PostgreSQL connection string (auto-provisioned)
-- OPENAI_API_KEY — OpenAI API key for text and image generation
+- OPENAI_API_KEY — OpenAI API key for text generation
+- KIE_API_KEY — Kie.ai API key for Nano Banana image editing
 
 ## Key Notes
 - Images in client/src/assets/ must be imported as JS variables
 - CSS color tokens use `H S% L%` format (no hsl() wrapper) for Tailwind v4
-- Story text uses `{name}` placeholder replaced with child's name at render time
 - All UI text is in Russian
+- Photo must be publicly accessible for Nano Banana API (uses REPLIT_DOMAINS for URL)
+- Detailed logging across all stages: routes, openai, nanoBanana, generate, storage

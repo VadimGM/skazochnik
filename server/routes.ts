@@ -1,7 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { generateStoryText, generateStoryImage } from "./openai";
+import { generateStoryText, type GeneratedPage } from "./openai";
+import { generateIllustration } from "./nanoBanana";
 import { log } from "./index";
 import multer from "multer";
 import path from "path";
@@ -29,6 +30,14 @@ const upload = multer({
     }
   },
 });
+
+function getPublicBaseUrl(): string {
+  const domain = process.env.REPLIT_DOMAINS || process.env.REPLIT_DEV_DOMAIN;
+  if (domain) {
+    return `https://${domain}`;
+  }
+  return `http://localhost:${process.env.PORT || 5000}`;
+}
 
 export async function registerRoutes(
   httpServer: Server,
@@ -114,6 +123,7 @@ export async function registerRoutes(
         theme,
         companion: companion || undefined,
         lessons: parsedLessons,
+        photoUrl,
       }).catch((err) => {
         log(`[GenerateAsync] КРИТИЧЕСКАЯ ОШИБКА генерации id="${story.id}": ${err.message}`, "routes");
         log(`[GenerateAsync] Stack: ${err.stack}`, "routes");
@@ -147,6 +157,43 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/stories/:id/regenerate", async (req, res) => {
+    const storyId = req.params.id;
+    log(`[POST /api/stories/${storyId}/regenerate] Запрос на перегенерацию`, "routes");
+
+    try {
+      const story = await storage.getStory(storyId);
+      if (!story) {
+        return res.status(404).json({ message: "Story not found" });
+      }
+
+      await storage.updateStory(storyId, {
+        status: "generating",
+        pages: [],
+        title: "Перегенерация...",
+      });
+
+      res.json({ id: storyId, status: "generating" });
+
+      generateStoryAsync(storyId, {
+        childName: story.childName,
+        gender: story.gender as "boy" | "girl",
+        age: story.age,
+        theme: story.theme,
+        companion: story.companion || undefined,
+        lessons: story.lessons,
+        photoUrl: story.photoUrl,
+      }).catch((err) => {
+        log(`[Regenerate] ОШИБКА перегенерации id="${storyId}": ${err.message}`, "routes");
+        storage.updateStory(storyId, { status: "error" });
+      });
+
+    } catch (error: any) {
+      log(`[Regenerate] ОШИБКА: ${error.message}`, "routes");
+      res.status(500).json({ message: error.message || "Internal server error" });
+    }
+  });
+
   return httpServer;
 }
 
@@ -157,40 +204,57 @@ async function generateStoryAsync(storyId: string, params: {
   theme: string;
   companion?: string;
   lessons: string[];
+  photoUrl?: string | null;
 }) {
   const totalStart = Date.now();
   log(`[GenerateAsync] ========== НАЧАЛО ГЕНЕРАЦИИ id="${storyId}" ==========`, "generate");
   log(`[GenerateAsync] Параметры: ${JSON.stringify({ ...params, storyId })}`, "generate");
 
-  log(`[GenerateAsync] Этап 1/2: Генерация текста сказки...`, "generate");
+  log(`[GenerateAsync] Этап 1/2: Генерация текста сказки через GPT-4o-mini...`, "generate");
   const textStart = Date.now();
-  const textPages = await generateStoryText(params);
+  const { pages: textPages, characterDescription } = await generateStoryText(params);
   const textElapsed = ((Date.now() - textStart) / 1000).toFixed(1);
   log(`[GenerateAsync] Этап 1/2 завершён за ${textElapsed}с: получено ${textPages.length} страниц`, "generate");
 
-  const title = textPages[0]?.title || "Волшебная сказка";
+  const coverPage = textPages.find(p => p.type === "cover");
+  const title = coverPage?.title || "Волшебная сказка";
   log(`[GenerateAsync] Название сказки: "${title}"`, "generate");
+  log(`[GenerateAsync] Описание персонажа: "${characterDescription.substring(0, 200)}"`, "generate");
 
-  log(`[GenerateAsync] Этап 2/2: Генерация ${textPages.length} иллюстраций...`, "generate");
+  log(`[GenerateAsync] Этап 2/2: Генерация ${textPages.length} иллюстраций через Nano Banana...`, "generate");
   const imagesStart = Date.now();
+
+  const publicBaseUrl = getPublicBaseUrl();
+  const photoPublicUrl = params.photoUrl ? `${publicBaseUrl}${params.photoUrl}` : null;
+  log(`[GenerateAsync] Публичный URL фото: ${photoPublicUrl || "нет фото"}`, "generate");
+
   const pages = [];
   for (let i = 0; i < textPages.length; i++) {
     const page = textPages[i];
     const pageStart = Date.now();
-    log(`[GenerateAsync] Иллюстрация ${i + 1}/${textPages.length}: начинаю генерацию...`, "generate");
+    log(`[GenerateAsync] Иллюстрация ${i + 1}/${textPages.length} (${page.type}): начинаю генерацию...`, "generate");
 
     let imageUrl = "";
-    try {
-      imageUrl = await generateStoryImage(page.imagePrompt, i);
-      const pageElapsed = ((Date.now() - pageStart) / 1000).toFixed(1);
-      log(`[GenerateAsync] Иллюстрация ${i + 1}/${textPages.length}: готова за ${pageElapsed}с`, "generate");
-    } catch (err: any) {
-      const pageElapsed = ((Date.now() - pageStart) / 1000).toFixed(1);
-      log(`[GenerateAsync] ОШИБКА иллюстрации ${i + 1}/${textPages.length} после ${pageElapsed}с: ${err.message}`, "generate");
-      log(`[GenerateAsync] Продолжаю без иллюстрации для стр.${i + 1}`, "generate");
-      imageUrl = "";
+
+    if (photoPublicUrl && page.imagePrompt) {
+      const enhancedPrompt = `${page.imagePrompt}\n\nCharacter reference: ${characterDescription}\n\nIMPORTANT: Transform and redraw the uploaded photo into this magical fairy tale scene. Keep the child recognizable but in the watercolor illustration style. The child from the photo should be the main character in this scene.`;
+
+      try {
+        imageUrl = await generateIllustration(enhancedPrompt, photoPublicUrl, i);
+        const pageElapsed = ((Date.now() - pageStart) / 1000).toFixed(1);
+        log(`[GenerateAsync] Иллюстрация ${i + 1}/${textPages.length}: готова за ${pageElapsed}с`, "generate");
+      } catch (err: any) {
+        const pageElapsed = ((Date.now() - pageStart) / 1000).toFixed(1);
+        log(`[GenerateAsync] ОШИБКА иллюстрации ${i + 1}/${textPages.length} после ${pageElapsed}с: ${err.message}`, "generate");
+        log(`[GenerateAsync] Продолжаю без иллюстрации для стр.${i + 1}`, "generate");
+        imageUrl = "";
+      }
+    } else {
+      log(`[GenerateAsync] Стр.${i + 1}: Пропускаю генерацию иллюстрации (нет фото или промпта)`, "generate");
     }
+
     pages.push({
+      type: page.type,
       title: page.title || undefined,
       text: page.text,
       imageUrl,

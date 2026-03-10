@@ -19,6 +19,7 @@ export const stories = pgTable("stories", {
 });
 
 export interface StoryPage {
+  type: "cover" | "content" | "end";
   text: string;
   imageUrl: string;
   title?: string;

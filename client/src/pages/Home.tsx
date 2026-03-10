@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import StoryForm from "@/components/StoryForm";
 import StoryLoading from "@/components/StoryLoading";
 import StoryViewer from "@/components/StoryViewer";
@@ -78,6 +78,25 @@ export default function Home() {
     }
   };
 
+  const handleRegenerate = async () => {
+    if (!storyId) return;
+    setStoryState("loading");
+    setStoryData(null);
+
+    try {
+      const res = await fetch(`/api/stories/${storyId}/regenerate`, { method: "POST" });
+      if (!res.ok) throw new Error("Regeneration failed");
+      pollStory(storyId);
+    } catch (error: any) {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось перегенерировать сказку",
+        variant: "destructive",
+      });
+      setStoryState("complete");
+    }
+  };
+
   const handleReset = () => {
     setStoryState("idle");
     setFormData(null);
@@ -87,9 +106,9 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-full h-[600px] -z-10 opacity-30 pointer-events-none" 
+      <div className="absolute top-0 left-0 w-full h-[600px] -z-10 opacity-30 pointer-events-none"
            style={{ backgroundImage: `url(${heroBg})`, backgroundSize: 'cover', backgroundPosition: 'center', maskImage: 'linear-gradient(to bottom, black, transparent)', WebkitMaskImage: 'linear-gradient(to bottom, black, transparent)' }} />
-      
+
       <header className="py-6 px-6 lg:px-12 flex justify-between items-center z-10">
         <div className="flex items-center gap-3 cursor-pointer group" onClick={handleReset}>
           <div className="bg-white/80 backdrop-blur-md p-2.5 rounded-2xl text-primary shadow-[0_4px_20px_-5px_rgba(160,120,220,0.3)] group-hover:scale-110 transition-transform">
@@ -126,7 +145,12 @@ export default function Home() {
         )}
 
         {storyState === "complete" && storyData && (
-          <StoryViewer onReset={handleReset} formData={formData} storyData={storyData} />
+          <StoryViewer
+            onReset={handleReset}
+            onRegenerate={handleRegenerate}
+            formData={formData}
+            storyData={storyData}
+          />
         )}
       </main>
     </div>
