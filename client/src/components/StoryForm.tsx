@@ -237,6 +237,15 @@ export default function StoryForm({ onSubmit }: StoryFormProps) {
                 </div>
               </div>
             </div>
+
+            <div className="space-y-3">
+              <Label className="text-lg font-serif">Друг или питомец <span className="text-muted-foreground text-sm font-sans font-normal ml-1">(опционально)</span></Label>
+              <Input 
+                {...form.register("companion")} 
+                placeholder="Например: кот Барсик..." 
+                className="h-14 px-5 rounded-2xl border-white bg-white/60 shadow-sm focus-visible:ring-primary focus-visible:bg-white"
+              />
+            </div>
           </div>
 
         </div>
@@ -297,15 +306,6 @@ export default function StoryForm({ onSubmit }: StoryFormProps) {
                 )
               })}
             </div>
-          </div>
-          
-          <div className="space-y-4">
-            <Label className="text-lg font-serif">Друг или питомец <span className="text-muted-foreground text-sm font-sans font-normal ml-1">(опционально)</span></Label>
-            <Input 
-              {...form.register("companion")} 
-              placeholder="Например: кот Барсик..." 
-              className="h-14 px-5 rounded-2xl border-white bg-white/60 shadow-sm focus-visible:ring-primary focus-visible:bg-white"
-            />
           </div>
         </div>
 
