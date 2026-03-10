@@ -55,7 +55,7 @@ export default function Home() {
                 Превратите <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-accent-foreground to-primary">фотографию</span><br/> в волшебную сказку
               </h2>
               <p className="text-lg md:text-xl text-muted-foreground/90 leading-relaxed max-w-2xl mx-auto font-light">
-                Загрузите фото, выберите атмосферу, и наша нейросеть за минуту создаст уникальную историю, где ваш ребенок — главный герой потрясающих иллюстраций.
+                Загрузите фото, выберите атмосферу, и магия ИИ за минуту создаст уникальную историю, где ваш ребенок — главный герой сказочных приключений.
               </p>
             </div>
 
