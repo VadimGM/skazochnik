@@ -61,4 +61,9 @@ Russian-language children's fairy tale generator. Users upload a child's photo, 
 - CSS color tokens use `H S% L%` format (no hsl() wrapper) for Tailwind v4
 - All UI text is in Russian
 - Photo must be publicly accessible for Nano Banana API (uses REPLIT_DOMAINS for URL)
-- Detailed logging across all stages: routes, openai, nanoBanana, generate, storage
+- **Logging**: Optimized minimal logging — only critical errors and completion events logged to reduce noise
+  - routes.ts: Only POST/PDF errors
+  - storage.ts: Removed all verbose logs (silent operations)
+  - openai.ts: Only completion time + page count on success, errors only
+  - nanoBanana.ts: No per-attempt logs, only final errors
+  - generate: Single completion log per story with total time

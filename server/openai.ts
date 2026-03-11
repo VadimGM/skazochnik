@@ -52,8 +52,6 @@ function getWordRange(age: number): string {
 
 export async function generateStoryText(req: StoryRequest): Promise<{ pages: GeneratedPage[]; characterDescription: string }> {
   const startTime = Date.now();
-  log(`[OpenAI:Text] Начинаю генерацию текста сказки для "${req.childName}" (${req.gender}, ${req.age} лет)`, "openai");
-  log(`[OpenAI:Text] Параметры: тема="${req.theme}", уроки=[${req.lessons.join(", ")}], компаньон="${req.companion || "нет"}"`, "openai");
 
   const genderWord = req.gender === "boy" ? "мальчик" : "девочка";
   const genderPronoun = req.gender === "boy" ? "он" : "она";
@@ -124,8 +122,6 @@ ${companionNote}
 - Обязательно: "No text or letters in the image."
 - Каждый промпт должен описывать КОНКРЕТНЫЙ момент из текста страницы`;
 
-  log(`[OpenAI:Text] Отправляю запрос к GPT-4o-mini (max_tokens=4000, temperature=0.85, ${contentPages + 2} страниц)...`, "openai");
-
   let response;
   try {
     response = await openai.chat.completions.create({
@@ -140,51 +136,31 @@ ${companionNote}
     });
   } catch (err: any) {
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-    log(`[OpenAI:Text] ОШИБКА запроса к GPT-4o-mini после ${elapsed}с: ${err.message}`, "openai");
-    log(`[OpenAI:Text] Статус: ${err.status || "N/A"}, Тип: ${err.type || "N/A"}, Код: ${err.code || "N/A"}`, "openai");
-    if (err.error) {
-      log(`[OpenAI:Text] Детали ошибки API: ${JSON.stringify(err.error)}`, "openai");
-    }
+    log(`[OpenAI] ОШИБКА: ${err.message}`, "openai");
     throw err;
   }
 
-  const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-  const usage = response.usage;
-  log(`[OpenAI:Text] Ответ получен за ${elapsed}с. Токены: prompt=${usage?.prompt_tokens || "?"}, completion=${usage?.completion_tokens || "?"}, total=${usage?.total_tokens || "?"}`, "openai");
-  log(`[OpenAI:Text] finish_reason: ${response.choices[0]?.finish_reason || "unknown"}`, "openai");
-
   const content = response.choices[0]?.message?.content;
   if (!content) {
-    log(`[OpenAI:Text] ОШИБКА: Пустой ответ от GPT-4o-mini. response.choices: ${JSON.stringify(response.choices)}`, "openai");
     throw new Error("Empty response from OpenAI");
   }
-
-  log(`[OpenAI:Text] Длина сырого ответа: ${content.length} символов`, "openai");
 
   let parsed: any;
   try {
     parsed = JSON.parse(content);
   } catch (parseErr: any) {
-    log(`[OpenAI:Text] ОШИБКА парсинга JSON: ${parseErr.message}`, "openai");
-    log(`[OpenAI:Text] Сырой ответ (первые 500 символов): ${content.substring(0, 500)}`, "openai");
-    throw new Error(`Failed to parse OpenAI response as JSON: ${parseErr.message}`);
+    throw new Error(`Failed to parse OpenAI response: ${parseErr.message}`);
   }
 
   const characterDescription = parsed.characterDescription || parsed.character_description || "";
   const pages: GeneratedPage[] = parsed.pages || parsed.story || [];
 
   if (!Array.isArray(pages) || pages.length === 0) {
-    log(`[OpenAI:Text] ОШИБКА: Неверный формат. Ключи: [${Object.keys(parsed).join(", ")}]`, "openai");
-    log(`[OpenAI:Text] Сырой JSON (первые 500 символов): ${JSON.stringify(parsed).substring(0, 500)}`, "openai");
     throw new Error("Invalid story format from OpenAI");
   }
 
-  log(`[OpenAI:Text] Успешно: ${pages.length} страниц, characterDescription=${characterDescription.length} символов`, "openai");
-  log(`[OpenAI:Text] characterDescription: "${characterDescription.substring(0, 200)}..."`, "openai");
-  for (let i = 0; i < pages.length; i++) {
-    const p = pages[i];
-    log(`[OpenAI:Text]   Стр.${i + 1}: type="${p.type}", текст=${p.text?.length || 0} симв, title="${p.title || "-"}", imagePrompt=${p.imagePrompt?.length || 0} симв`, "openai");
-  }
+  const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+  log(`[OpenAI] Text: ${pages.length} pages за ${elapsed}с`, "openai");
 
   return { pages, characterDescription };
 }
