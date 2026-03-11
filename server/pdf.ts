@@ -149,10 +149,17 @@ export async function generateStoryPdf(
         subY += 7;
       }
     } else if (page.type === "end") {
+      doc.setDrawColor(180, 140, 200);
+      doc.setLineWidth(0.3);
+      
+      doc.line(MARGIN, PAGE_H / 2 - 50, PAGE_W - MARGIN, PAGE_H / 2 - 50);
+      doc.line(MARGIN, PAGE_H / 2 + 50, PAGE_W - MARGIN, PAGE_H / 2 + 50);
+      
       const endY = PAGE_H / 2 - 20;
       doc.setFontSize(36);
       doc.setTextColor(90, 50, 140);
       doc.text("Конец", PAGE_W / 2, endY, { align: "center" });
+      
       const afterText = text.replace(/^Конец\.?\s*/, "");
       if (afterText) {
         doc.setFontSize(14);
@@ -164,6 +171,13 @@ export async function generateStoryPdf(
           lineY += 7;
         }
       }
+      
+      doc.setFontSize(11);
+      doc.setTextColor(120, 100, 140);
+      doc.text("GVM-aistudio", PAGE_W / 2, PAGE_H - 20, { align: "center" });
+      doc.setFontSize(9);
+      doc.setTextColor(150, 130, 160);
+      doc.text("Logo & brand identity design", PAGE_W / 2, PAGE_H - 15, { align: "center" });
     } else {
       const imgTopMargin = 25;
       const imgBottomMargin = 10;

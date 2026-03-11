@@ -36,3 +36,9 @@ id = "t_6le0oib_4fVmGPxd6VI"
 uri = "file:///tmp/final.pdf"
 type = "pdf"
 title = "Финальный PDF с корректным размером иллюстрации на обложке"
+
+[[outputs]]
+id = "HnutUmbaRVlRPb4m5IaP4"
+uri = "file:///tmp/beautiful.pdf"
+type = "pdf"
+title = "Ккрасивый PDF - новая оформленная последняя страница"
