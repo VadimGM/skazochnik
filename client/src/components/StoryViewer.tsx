@@ -229,25 +229,25 @@ export default function StoryViewer({ onReset, onRegenerate, formData, storyData
                 </svg>
               </div>
 
-              <div className="mt-16 flex flex-wrap items-center justify-center gap-4">
-                <Button data-testid="button-download-pdf" onClick={handleDownloadPDF} disabled={pdfLoading} className="rounded-2xl h-14 px-6 bg-white border-2 border-white shadow-sm hover:border-primary/30 hover:bg-white/80 text-foreground font-semibold text-base transition-all">
+              <div className="mt-16 flex items-center justify-center gap-3">
+                <Button data-testid="button-download-pdf" onClick={handleDownloadPDF} disabled={pdfLoading} className="rounded-2xl h-12 px-4 bg-white border-2 border-white shadow-sm hover:border-primary/30 hover:bg-white/80 text-foreground font-semibold text-sm transition-all">
                   {pdfLoading ? (
-                    <Loader2 className="mr-2 h-5 w-5 text-primary animate-spin" />
+                    <Loader2 className="mr-1.5 h-4 w-4 text-primary animate-spin" />
                   ) : (
-                    <Download className="mr-2 h-5 w-5 text-primary" />
+                    <Download className="mr-1.5 h-4 w-4 text-primary" />
                   )}
-                  {pdfLoading ? "Создаём PDF..." : "Скачать в PDF"}
+                  {pdfLoading ? "PDF..." : "Скачать PDF"}
                 </Button>
-                <Button data-testid="button-share" onClick={handleShare} className="rounded-2xl h-14 px-6 bg-white border-2 border-white shadow-sm hover:border-primary/30 hover:bg-white/80 text-foreground font-semibold text-base transition-all">
-                  <Share2 className="mr-2 h-5 w-5 text-primary" />
+                <Button data-testid="button-share" onClick={handleShare} className="rounded-2xl h-12 px-4 bg-white border-2 border-white shadow-sm hover:border-primary/30 hover:bg-white/80 text-foreground font-semibold text-sm transition-all">
+                  <Share2 className="mr-1.5 h-4 w-4 text-primary" />
                   Поделиться
                 </Button>
-                <Button data-testid="button-regenerate" onClick={handleRegenerate} className="rounded-2xl h-14 px-6 bg-white border-2 border-white shadow-sm hover:border-primary/30 hover:bg-white/80 text-foreground font-semibold text-base transition-all">
-                  <RotateCcw className="mr-2 h-5 w-5 text-primary" />
-                  Перегенерировать
+                <Button data-testid="button-regenerate" onClick={handleRegenerate} className="rounded-2xl h-12 px-4 bg-white border-2 border-white shadow-sm hover:border-primary/30 hover:bg-white/80 text-foreground font-semibold text-sm transition-all">
+                  <RotateCcw className="mr-1.5 h-4 w-4 text-primary" />
+                  Заново
                 </Button>
-                <Button data-testid="button-new-story" onClick={onReset} className="rounded-2xl h-14 px-8 bg-primary hover:bg-primary/90 text-white shadow-md transition-all font-bold text-base">
-                  <Plus className="mr-2 h-5 w-5" />
+                <Button data-testid="button-new-story" onClick={onReset} className="rounded-2xl h-12 px-5 bg-primary hover:bg-primary/90 text-white shadow-md transition-all font-bold text-sm">
+                  <Plus className="mr-1.5 h-4 w-4" />
                   Новая сказка
                 </Button>
               </div>
