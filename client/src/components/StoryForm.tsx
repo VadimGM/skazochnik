@@ -313,7 +313,7 @@ export default function StoryForm({ onSubmit }: StoryFormProps) {
             </div>
             <Input
               {...form.register("customMoral")}
-              placeholder="Или напишите свою мораль..."
+              placeholder="Напишите свои варианты"
               className="mt-3 rounded-2xl h-12 bg-white/60 border-transparent focus:border-primary/30 text-base placeholder:text-muted-foreground/50"
               data-testid="input-custom-moral"
             />
