@@ -37,17 +37,57 @@ function wrapText(doc: jsPDF, text: string, maxWidth: number, fontSize: number):
   return lines;
 }
 
-async function fetchImageAsBase64(url: string): Promise<{ data: string; format: string } | null> {
+function getImageDimensions(buffer: Buffer): { width: number; height: number } | null {
+  try {
+    if (buffer[0] === 0x89 && buffer[1] === 0x50) {
+      const width = buffer.readUInt32BE(16);
+      const height = buffer.readUInt32BE(20);
+      return { width, height };
+    }
+    if (buffer[0] === 0xFF && buffer[1] === 0xD8) {
+      let offset = 2;
+      while (offset < buffer.length - 1) {
+        if (buffer[offset] !== 0xFF) break;
+        const marker = buffer[offset + 1];
+        if (marker === 0xC0 || marker === 0xC2) {
+          const height = buffer.readUInt16BE(offset + 5);
+          const width = buffer.readUInt16BE(offset + 7);
+          return { width, height };
+        }
+        const segLen = buffer.readUInt16BE(offset + 2);
+        offset += 2 + segLen;
+      }
+    }
+  } catch {}
+  return null;
+}
+
+function fitImage(
+  imgW: number, imgH: number,
+  maxW: number, maxH: number,
+): { w: number; h: number; x: number; y: number } {
+  const ratio = Math.min(maxW / imgW, maxH / imgH);
+  const w = imgW * ratio;
+  const h = imgH * ratio;
+  const x = (maxW - w) / 2;
+  const y = 0;
+  return { w, h, x, y };
+}
+
+async function fetchImageAsBase64(url: string): Promise<{ data: string; format: string; width: number; height: number } | null> {
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
     if (!res.ok) return null;
-    const buffer = await res.arrayBuffer();
-    const base64 = Buffer.from(buffer).toString("base64");
+    const buffer = Buffer.from(await res.arrayBuffer());
+    const base64 = buffer.toString("base64");
     const contentType = res.headers.get("content-type") || "";
     let format = "PNG";
     if (contentType.includes("jpeg") || contentType.includes("jpg")) format = "JPEG";
     else if (contentType.includes("webp")) format = "WEBP";
-    return { data: base64, format };
+    const dims = getImageDimensions(buffer);
+    const width = dims?.width || 1024;
+    const height = dims?.height || 1024;
+    return { data: base64, format, width, height };
   } catch {
     return null;
   }
@@ -78,12 +118,13 @@ export async function generateStoryPdf(
     }
 
     if (page.type === "cover") {
+      const coverImgMaxH = PAGE_H - 60;
       if (imgData) {
-        const imgH = PAGE_H - 60;
+        const fit = fitImage(imgData.width, imgData.height, PAGE_W, coverImgMaxH);
         doc.addImage(
           `data:image/${imgData.format.toLowerCase()};base64,${imgData.data}`,
           imgData.format,
-          0, 0, PAGE_W, imgH, undefined, "FAST",
+          fit.x, fit.y, fit.w, fit.h, undefined, "FAST",
         );
       }
       doc.setFontSize(28);
@@ -122,13 +163,14 @@ export async function generateStoryPdf(
     } else {
       let textStartY = MARGIN;
       if (imgData) {
-        const imgDisplayH = PAGE_H * 0.5;
+        const contentImgMaxH = PAGE_H * 0.5;
+        const fit = fitImage(imgData.width, imgData.height, PAGE_W, contentImgMaxH);
         doc.addImage(
           `data:image/${imgData.format.toLowerCase()};base64,${imgData.data}`,
           imgData.format,
-          0, 0, PAGE_W, imgDisplayH, undefined, "FAST",
+          fit.x, fit.y, fit.w, fit.h, undefined, "FAST",
         );
-        textStartY = imgDisplayH + 10;
+        textStartY = fit.h + 10;
       }
       doc.setFontSize(13);
       doc.setTextColor(50, 50, 50);
