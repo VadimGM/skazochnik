@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "SbZiE_vnt86JOdBeZATuN"
+uri = "file:///tmp/last_story.pdf"
+type = "pdf"
+title = "Космическое Приключение Максима (PDF)"
