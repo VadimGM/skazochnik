@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { log } from "./index";
+import { declineNameAccusative } from "./declension";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -82,7 +83,7 @@ ${companionNote}
 ВАЖНО: Используй имя "${req.childName}" в тексте. ${genderPronoun.charAt(0).toUpperCase() + genderPronoun.slice(1)} — главный герой.
 
 Структура сказки:
-1. ОБЛОЖКА (type: "cover") — только название сказки и имя автора "Сказка для ${req.childName}"
+1. ОБЛОЖКА (type: "cover") — только название сказки и имя автора "Сказка для ${declineNameAccusative(req.childName)}"
 2. ${contentPages} СТРАНИЦ ТЕКСТА (type: "content") — сама сказка, по нарастающей
 3. ФИНАЛ (type: "end") — последняя страница с текстом "Конец" и одним тёплым предложением-послесловием
 
@@ -95,7 +96,7 @@ ${companionNote}
     {
       "type": "cover",
       "title": "Название сказки",
-      "text": "Сказка для ${req.childName}",
+      "text": "Сказка для ${declineNameAccusative(req.childName)}",
       "imagePrompt": "Scene description for the cover: the child stands in [describe setting from the story theme]. Full body view, the child is the central figure, facing the viewer. Background: [detailed magical setting]. No other human characters."
     },
     {
