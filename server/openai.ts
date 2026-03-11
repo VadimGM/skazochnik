@@ -10,6 +10,7 @@ interface StoryRequest {
   theme: string;
   companion?: string;
   lessons: string[];
+  customMoral?: string;
 }
 
 export interface GeneratedPage {
@@ -58,7 +59,11 @@ export async function generateStoryText(req: StoryRequest): Promise<{ pages: Gen
   const genderPronoun = req.gender === "boy" ? "он" : "она";
   const genderEng = req.gender === "boy" ? "boy" : "girl";
   const themDesc = THEME_LABELS[req.theme] || req.theme;
-  const lessonsList = req.lessons.map(l => LESSON_LABELS[l] || l).join(", ");
+  const lessonsLabels = req.lessons.map(l => LESSON_LABELS[l] || l);
+  if (req.customMoral && req.customMoral.trim()) {
+    lessonsLabels.push(req.customMoral.trim());
+  }
+  const lessonsList = lessonsLabels.join(", ");
   const companionNote = req.companion ? `У героя есть верный друг/питомец: ${req.companion}. Друг/питомец должен участвовать в сюжете.` : "";
   const contentPages = getPageCount(req.age);
   const wordRange = getWordRange(req.age);

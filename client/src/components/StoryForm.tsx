@@ -22,9 +22,13 @@ const formSchema = z.object({
   theme: z.string().min(1, "Выберите атмосферу сказки"),
   customTheme: z.string().optional(),
   companion: z.string().optional(),
-  lesson: z.array(z.string()).min(1, "Выберите хотя бы один урок"),
-  photo: z.any().optional(), // In a real app this would be a File or URL
-});
+  lesson: z.array(z.string()),
+  customMoral: z.string().optional(),
+  photo: z.any().optional(),
+}).refine(
+  (data) => data.lesson.length > 0 || (data.customMoral && data.customMoral.trim().length > 0),
+  { message: "Выберите хотя бы один урок или напишите свою мораль", path: ["lesson"] },
+);
 
 const THEMES = [
   { id: "forest", label: "Волшебный лес", image: themeForest, icon: Compass },
@@ -61,6 +65,7 @@ export default function StoryForm({ onSubmit }: StoryFormProps) {
       customTheme: "",
       companion: "",
       lesson: ["kindness"],
+      customMoral: "",
     },
   });
 
@@ -306,6 +311,12 @@ export default function StoryForm({ onSubmit }: StoryFormProps) {
                 )
               })}
             </div>
+            <Input
+              {...form.register("customMoral")}
+              placeholder="Или напишите свою мораль..."
+              className="mt-3 rounded-2xl h-12 bg-white/60 border-transparent focus:border-primary/30 text-base placeholder:text-muted-foreground/50"
+              data-testid="input-custom-moral"
+            />
           </div>
         </div>
 

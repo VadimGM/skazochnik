@@ -55,6 +55,7 @@ export default function Home() {
       formPayload.append("theme", data.theme);
       formPayload.append("companion", data.companion || "");
       formPayload.append("lessons", JSON.stringify(data.lesson));
+      if (data.customMoral) formPayload.append("customMoral", data.customMoral);
       if (data.photo instanceof File) {
         formPayload.append("photo", data.photo);
       }

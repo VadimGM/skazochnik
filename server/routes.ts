@@ -81,7 +81,7 @@ export async function registerRoutes(
     log(`[POST /api/stories] Новый запрос на создание сказки`, "routes");
 
     try {
-      const { childName, gender, age, theme, companion, lessons } = req.body;
+      const { childName, gender, age, theme, companion, lessons, customMoral } = req.body;
 
       log(`[POST /api/stories] Полученные поля: childName="${childName}", gender="${gender}", age="${age}", theme="${theme}", companion="${companion || "нет"}"`, "routes");
       log(`[POST /api/stories] Фото: ${req.file ? `загружено (${req.file.originalname}, ${(req.file.size / 1024).toFixed(1)} КБ, ${req.file.mimetype})` : "не загружено"}`, "routes");
@@ -145,6 +145,7 @@ export async function registerRoutes(
         theme,
         companion: companion || undefined,
         lessons: parsedLessons,
+        customMoral: customMoral || undefined,
         photoUrl,
       }).catch((err) => {
         log(`[GenerateAsync] КРИТИЧЕСКАЯ ОШИБКА генерации id="${story.id}": ${err.message}`, "routes");
@@ -256,6 +257,7 @@ async function generateStoryAsync(storyId: string, params: {
   theme: string;
   companion?: string;
   lessons: string[];
+  customMoral?: string;
   photoUrl?: string | null;
 }) {
   const totalStart = Date.now();
