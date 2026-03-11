@@ -9,6 +9,7 @@ const MARGIN = 15;
 const CONTENT_W = PAGE_W - MARGIN * 2;
 
 let fontBase64: string | null = null;
+let notoSerifBase64: string | null = null;
 
 function loadFont(): string {
   if (fontBase64) return fontBase64;
@@ -16,6 +17,14 @@ function loadFont(): string {
   const buffer = fs.readFileSync(fontPath);
   fontBase64 = buffer.toString("base64");
   return fontBase64;
+}
+
+function loadNotoSerif(): string {
+  if (notoSerifBase64) return notoSerifBase64;
+  const fontPath = path.join(process.cwd(), "server", "assets", "NotoSerif-Regular.ttf");
+  const buffer = fs.readFileSync(fontPath);
+  notoSerifBase64 = buffer.toString("base64");
+  return notoSerifBase64;
 }
 
 function wrapText(doc: jsPDF, text: string, maxWidth: number, fontSize: number): string[] {
@@ -101,8 +110,11 @@ export async function generateStoryPdf(
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
   const font = loadFont();
+  const notoSerif = loadNotoSerif();
   doc.addFileToVFS("Roboto-Regular.ttf", font);
+  doc.addFileToVFS("NotoSerif-Regular.ttf", notoSerif);
   doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
+  doc.addFont("NotoSerif-Regular.ttf", "NotoSerif", "normal");
   doc.setFont("Roboto", "normal");
 
   for (let i = 0; i < pages.length; i++) {
@@ -161,25 +173,35 @@ export async function generateStoryPdf(
         }
       }
     } else {
-      let textStartY = MARGIN;
+      const imgTopMargin = 10;
+      const imgBottomMargin = 10;
+      const imgMaxW = PAGE_W - MARGIN * 2;
+      const imgMaxH = PAGE_H * 0.65;
+      
       if (imgData) {
-        const contentImgMaxH = PAGE_H * 0.5;
-        const fit = fitImage(imgData.width, imgData.height, PAGE_W, contentImgMaxH);
+        const fit = fitImage(imgData.width, imgData.height, imgMaxW, imgMaxH);
+        const imgX = MARGIN + (imgMaxW - fit.w) / 2;
+        const imgY = imgTopMargin;
         doc.addImage(
           `data:image/${imgData.format.toLowerCase()};base64,${imgData.data}`,
           imgData.format,
-          fit.x, fit.y, fit.w, fit.h, undefined, "FAST",
+          imgX, imgY, fit.w, fit.h, undefined, "FAST",
         );
-        textStartY = fit.h + 10;
       }
-      doc.setFontSize(13);
+      
+      const textStartY = imgTopMargin + imgMaxH + imgBottomMargin;
+      const textMaxH = PAGE_H - textStartY - MARGIN;
+      
+      doc.setFont("NotoSerif", "normal");
+      doc.setFontSize(11);
       doc.setTextColor(50, 50, 50);
-      const textLines = wrapText(doc, text, CONTENT_W, 13);
+      doc.setLineHeightFactor(1.5);
+      const textLines = wrapText(doc, text, CONTENT_W, 11);
       let lineY = textStartY;
       for (const line of textLines) {
-        if (lineY > PAGE_H - MARGIN) break;
+        if (lineY > PAGE_H - MARGIN - 2) break;
         doc.text(line, MARGIN, lineY);
-        lineY += 7;
+        lineY += 5.5;
       }
     }
   }

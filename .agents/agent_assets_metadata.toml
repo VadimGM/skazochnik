@@ -6,3 +6,9 @@ id = "SbZiE_vnt86JOdBeZATuN"
 uri = "file:///tmp/last_story.pdf"
 type = "pdf"
 title = "Космическое Приключение Максима (PDF)"
+
+[[outputs]]
+id = "xjAApvhnzRMMdnAcWKmfV"
+uri = "file:///tmp/final_story.pdf"
+type = "pdf"
+title = "Космическое Приключение Максима (с новым дизайном)"
