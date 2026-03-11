@@ -112,7 +112,7 @@ export async function generateStoryPdf(
     if (i > 0) doc.addPage();
     doc.setFont("Roboto", "normal");
 
-    let imgData: { data: string; format: string } | null = null;
+    let imgData: { data: string; format: string; width: number; height: number } | null = null;
     if (page.imageUrl) {
       imgData = await fetchImageAsBase64(page.imageUrl);
     }

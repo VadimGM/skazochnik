@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { generateStoryText, type GeneratedPage } from "./openai";
+import type { StoryPage } from "@shared/schema";
 import { generateIllustration } from "./nanoBanana";
 import { generateStoryPdf } from "./pdf";
 import { log } from "./index";
@@ -236,7 +237,7 @@ async function generateStoryAsync(storyId: string, params: {
 
   await storage.updateStory(storyId, { progress: `Создаём иллюстрации: 0 из ${textPages.length}` });
 
-  const pageResults: Array<{ type: string; title?: string; text: string; imageUrl: string }> = new Array(textPages.length);
+  const pageResults: StoryPage[] = new Array(textPages.length);
 
   const PARALLEL_LIMIT = 3;
   let completedCount = 0;
@@ -299,17 +300,16 @@ No text or letters in the image. The child from the reference photo is the main 
 
   await semaphore();
 
-  const pages = pageResults;
-  const successImages = pages.filter(p => p.imageUrl).length;
+  const successImages = pageResults.filter(p => p.imageUrl).length;
 
   try {
     await storage.updateStory(storyId, {
       title,
-      pages,
+      pages: pageResults,
       status: "complete",
     });
     const totalElapsed = ((Date.now() - totalStart) / 1000).toFixed(1);
-    log(`[Generate] id="${storyId}" ГОТОВО за ${totalElapsed}с (${successImages}/${pages.length} img)`, "generate");
+    log(`[Generate] id="${storyId}" ГОТОВО за ${totalElapsed}с (${successImages}/${pageResults.length} img)`, "generate");
   } catch (dbErr: any) {
     log(`[Generate] id="${storyId}" DB ОШИБКА: ${dbErr.message}`, "generate");
     throw dbErr;
