@@ -17,7 +17,9 @@ Russian-language children's fairy tale generator. Users upload a child's photo, 
 - `server/storage.ts` — DatabaseStorage class implementing IStorage interface
 - `server/openai.ts` — GPT-4o-mini text generation: story text + character description + image prompts
 - `server/nanoBanana.ts` — Nano Banana API: photo editing into illustrations via kie.ai
-- `server/routes.ts` — API routes: POST /api/stories, GET /api/stories/:id, POST /api/stories/:id/regenerate
+- `server/pdf.ts` — Server-side PDF generation with jsPDF + Roboto font (Cyrillic support)
+- `server/assets/Roboto-Regular.ttf` — Full Roboto font with Cyrillic glyphs for PDF
+- `server/routes.ts` — API routes: POST /api/stories, GET /api/stories/:id, GET /api/stories/:id/pdf, POST /api/stories/:id/regenerate
 - `client/src/pages/Home.tsx` — Main page with form → loading → viewer flow
 - `client/src/pages/StoryPage.tsx` — Shared story viewer at /story/:id
 - `client/src/components/StoryForm.tsx` — Story configuration form with photo upload
