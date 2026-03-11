@@ -118,7 +118,8 @@ export async function generateStoryPdf(
     }
 
     if (page.type === "cover") {
-      const coverImgMaxH = PAGE_H - 80;
+      const coverImgMaxH = 100;
+      let imageEndY = 30;
       if (imgData) {
         const fit = fitImage(imgData.width, imgData.height, PAGE_W, coverImgMaxH);
         doc.addImage(
@@ -126,12 +127,14 @@ export async function generateStoryPdf(
           imgData.format,
           fit.x, 30, fit.w, fit.h, undefined, "FAST",
         );
+        imageEndY = 30 + fit.h;
       }
+      const titleStartY = imageEndY + 20;
       doc.setFontSize(28);
       doc.setTextColor(90, 50, 140);
       const coverTitle = page.title || title || "";
       const titleLines = wrapText(doc, coverTitle, CONTENT_W, 28);
-      let titleY = imgData ? PAGE_H - 50 : PAGE_H / 2 - 20;
+      let titleY = titleStartY;
       for (const line of titleLines) {
         doc.text(line, PAGE_W / 2, titleY, { align: "center" });
         titleY += 12;
