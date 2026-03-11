@@ -30,3 +30,9 @@ id = "tuQBcjPIeNld1Pcby9hWP"
 uri = "file:///tmp/fixed.pdf"
 type = "pdf"
 title = "Исправленный PDF - текст под изображением"
+
+[[outputs]]
+id = "t_6le0oib_4fVmGPxd6VI"
+uri = "file:///tmp/final.pdf"
+type = "pdf"
+title = "Финальный PDF с корректным размером иллюстрации на обложке"

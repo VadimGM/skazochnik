@@ -118,18 +118,19 @@ export async function generateStoryPdf(
     }
 
     if (page.type === "cover") {
-      const coverImgMaxH = 100;
-      let imageEndY = 30;
+      const coverImgMaxW = PAGE_W;
+      const coverImgMaxH = PAGE_H * 0.55;
+      let imageEndY = 25;
       if (imgData) {
-        const fit = fitImage(imgData.width, imgData.height, PAGE_W, coverImgMaxH);
+        const fit = fitImage(imgData.width, imgData.height, coverImgMaxW, coverImgMaxH);
         doc.addImage(
           `data:image/${imgData.format.toLowerCase()};base64,${imgData.data}`,
           imgData.format,
-          fit.x, 30, fit.w, fit.h, undefined, "FAST",
+          fit.x, 25, fit.w, fit.h, undefined, "FAST",
         );
-        imageEndY = 30 + fit.h;
+        imageEndY = 25 + fit.h;
       }
-      const titleStartY = imageEndY + 20;
+      const titleStartY = imageEndY + 12;
       doc.setFontSize(28);
       doc.setTextColor(90, 50, 140);
       const coverTitle = page.title || title || "";
