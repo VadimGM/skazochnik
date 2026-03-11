@@ -18,3 +18,9 @@ id = "nhBu84q_hkdKnqtBxKGWb"
 uri = "file:///tmp/working_pdf.pdf"
 type = "pdf"
 title = "Космическое приключение Максима (исправленный PDF)"
+
+[[outputs]]
+id = "4hdtJ2BltGLWLBEm_s0kY"
+uri = "file:///tmp/updated.pdf"
+type = "pdf"
+title = "Обновлённый PDF с улучшенными отступами"

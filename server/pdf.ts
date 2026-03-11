@@ -118,13 +118,13 @@ export async function generateStoryPdf(
     }
 
     if (page.type === "cover") {
-      const coverImgMaxH = PAGE_H - 60;
+      const coverImgMaxH = PAGE_H - 80;
       if (imgData) {
         const fit = fitImage(imgData.width, imgData.height, PAGE_W, coverImgMaxH);
         doc.addImage(
           `data:image/${imgData.format.toLowerCase()};base64,${imgData.data}`,
           imgData.format,
-          fit.x, fit.y, fit.w, fit.h, undefined, "FAST",
+          fit.x, 30, fit.w, fit.h, undefined, "FAST",
         );
       }
       doc.setFontSize(28);
@@ -161,7 +161,7 @@ export async function generateStoryPdf(
         }
       }
     } else {
-      const imgTopMargin = 10;
+      const imgTopMargin = 25;
       const imgBottomMargin = 10;
       const imgMaxW = PAGE_W - MARGIN * 2;
       const imgMaxH = PAGE_H * 0.65;
